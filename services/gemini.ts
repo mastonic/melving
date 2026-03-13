@@ -135,34 +135,41 @@ export const geminiService = {
   async generateDocument(client: Client, project: Project, grant: Grant, docType: string): Promise<string> {
     console.log("Génération de document avec les données :", { project, grant });
     const ai = getAI();
-    const prompt = `Rédige une ${docType} officielle de haute qualité, EXTRÊMEMENT DÉTAILLÉE et PERSONNALISÉE pour solliciter l'aide "${grant.title}" auprès de ${grant.provider}.
+    const prompt = `Rédige une ${docType} officielle prête à l'emploi.
     
-    CONSIGNES CRITIQUES :
-    1. TU DOIS UTILISER LES DONNÉES CI-DESSOUS POUR CHAQUE PARAGRAPHE. Ne fais pas un modèle vide.
-    2. Intègre les termes techniques, les dates et les montants financiers fournis.
-    3. Le ton doit être expert, convaincant et formel.
-    4. Structure : Objet, Contexte, Objectifs techniques, Impact attendu, Plan de financement, Conclusion.
+    CONSIGNES DE FORME (STRICTES) :
+    1. NE COMMENCE PAS par une phrase comme "Voici une proposition de..." ou "Voici la lettre...".
+    2. COMMENCE DIRECTEMENT par le lieu et la date (ex: Saint-Martin, le ${new Date().toLocaleDateString('fr-FR')}) ou l'Objet.
+    3. NE REJOUE PAS le rôle de l'assistant : réponds UNIQUEMENT le contenu de la lettre.
+    
+    CONSIGNES DE FOND :
+    1. INCLUSION DES DATES : Tu DOIS mentionner explicitement que le projet débute le ${project.startDate || "[DATE DE DÉBUT]"} et se termine le ${project.endDate || "[DATE DE FIN]"}.
+    2. Utilise les termes techniques du projet pour une personnalisation maximale.
 
-    DONNÉES À INTÉGRER IMPÉRATIVEMENT :
-    - Entreprise porteuse : ${client.name} (Région: ${client.region}, Secteur: ${client.sector})
-    - Intitulé du Projet : ${project.title}
-    - Contexte opérationnel : ${project.context || "À détailler selon le projet"}
-    - Type de projet : ${project.projectType || "Non spécifié"}
-    - Objectif global : ${project.target || "Non spécifié"}
-    - Détails techniques des objectifs : ${project.objectives || "Non spécifié"}
-    - Résultats attendus : ${project.expectedResults || "Non spécifié"}
-    - Localisation de l'opération : ${project.location || "Non spécifié"}
-    - Calendrier d'exécution : Du ${project.startDate || "en attente"} au ${project.endDate || "en attente"} (Durée: ${project.duration || "Non spécifiée"})
-    - Plan de financement : ${project.financingPlan || "Budget disponible dans le plan détaillé"}
+    DONNÉES À UTILISER :
+    - Porteuse : ${client.name} (${client.region})
+    - Titre : ${project.title}
+    - Contexte : ${project.context}
+    - Objectifs : ${project.objectives}
+    - Dates : Du ${project.startDate || "Non définie"} au ${project.endDate || "Non définie"} (Durée: ${project.duration})
+    - Budget/Aide : ${grant.amount} pour l'aide ${grant.title}
     
-    Rédige la lettre complète prête à être signée.`;
+    Rédige le contenu complet maintenant.`;
 
     return withRetry(async () => {
       const response = await ai.models.generateContent({
         model: "models/gemini-1.5-flash",
         contents: [{ role: "user", parts: [{ text: prompt }] }]
       });
-      return response.text || "Erreur lors de la génération du document.";
+      
+      let text = response.text || "";
+      // Nettoyage agressif du blabla d'introduction
+      text = text.replace(/^[\s\S]*?(Objet\s*:|À\s+l'attention|Monsieur|Madame|Cher|Chère)/i, "$1").trim();
+      // Si le remplacement n'a pas fonctionné (pas de mot clé trouvé), on fait un nettoyage standard
+      if (text === response.text) {
+        text = text.replace(/^(Voici|Je vous|Ci-joint|Veuillez trouver|Cette lettre|Voici une proposition).*?$/im, "").trim();
+      }
+      return text || "Erreur lors de la génération du document.";
     });
   }
 };

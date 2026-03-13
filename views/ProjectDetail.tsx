@@ -442,13 +442,14 @@ const ProjectDetail: React.FC<ProjectDetailProps> = ({ projectId, onBack }) => {
                           const doc = await geminiService.generateDocument(client, project, currentGrant, "Lettre d'Intention");
                           setGeneratedDoc(doc);
                           setLoading(false);
+                          alert("Lettre mise à jour avec les informations de la synthèse !");
                         }
                       }}
                       disabled={loading}
-                      className="px-6 py-4 bg-blue-50 text-blue-700 rounded-2xl text-[10px] font-black uppercase hover:bg-blue-100 transition-all active:scale-95"
+                      className="px-6 py-4 bg-blue-600 text-white border-2 border-blue-400 rounded-2xl text-[10px] font-black uppercase hover:bg-blue-700 transition-all active:scale-95 shadow-lg shadow-blue-200"
                     >
                       {loading ? <i className="fas fa-circle-notch fa-spin mr-2"></i> : <i className="fas fa-sync-alt mr-2"></i>}
-                      Régénérer
+                      Régénérer la lettre
                     </button>
                     <button onClick={handleValidateAndSave} className="px-6 py-4 bg-green-600 text-white rounded-2xl text-[10px] font-black uppercase hover:bg-green-700 transition-all shadow-lg shadow-green-100 active:scale-95">
                       <i className="fas fa-check-double mr-2"></i> Valider Dossier
