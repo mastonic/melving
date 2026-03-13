@@ -105,6 +105,42 @@ const App: React.FC = () => {
         </div>
       </nav>
 
+      {/* Breadcrumbs (Beads) */}
+      <div className="bg-slate-50 border-b border-slate-100">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex items-center space-x-2 text-[10px] font-black uppercase tracking-widest text-slate-400">
+          <button onClick={() => setView('landing')} className="hover:text-blue-600">Accueil</button>
+          <i className="fas fa-chevron-right text-[8px] opacity-30"></i>
+          {view !== 'landing' && (
+            <>
+              <button 
+                onClick={() => setView('dashboard')} 
+                className={`hover:text-blue-600 ${view === 'dashboard' ? 'text-blue-600' : ''}`}
+              >
+                Pilotage
+              </button>
+              {view === 'project' && (
+                <>
+                  <i className="fas fa-chevron-right text-[8px] opacity-30"></i>
+                  <span className="text-slate-900">Dossier en cours</span>
+                </>
+              )}
+              {view === 'form' && (
+                <>
+                  <i className="fas fa-chevron-right text-[8px] opacity-30"></i>
+                  <span className="text-slate-900">Nouveau Dossier</span>
+                </>
+              )}
+              {view === 'login' && (
+                <>
+                  <i className="fas fa-chevron-right text-[8px] opacity-30"></i>
+                  <span className="text-slate-900">Authentification</span>
+                </>
+              )}
+            </>
+          )}
+        </div>
+      </div>
+
       {/* Main Content */}
       <main className="flex-grow">
         {view === 'landing' && <LandingPage onStart={() => user ? setView('dashboard') : setView('login')} />}
