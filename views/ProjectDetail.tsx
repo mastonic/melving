@@ -94,14 +94,16 @@ const ProjectDetail: React.FC<ProjectDetailProps> = ({ projectId, onBack }) => {
     await new Promise(resolve => setTimeout(resolve, 500));
     
     try {
-      console.log("Appel au service Gemini pour analyse...");
-      // Appel au service avec tous les documents (multimodal)
       const extracted = await geminiService.analyzeDocument(project.documents);
       console.log("Données extraites reçues :", extracted);
-      
+
+      const cleanExtracted = Object.fromEntries(
+        Object.entries(extracted || {}).filter(([_, v]) => v != null && v !== "")
+      );
+
       const updatedProject = { 
         ...project, 
-        ...extracted, 
+        ...cleanExtracted, 
         updatedAt: new Date().toISOString() 
       };
 

@@ -36,24 +36,23 @@ export const geminiService = {
     const ai = getAI();
     
     const prompt = `Tu es un expert en ingénierie de financement public. Analyse les documents fournis (textes, PDF, etc.) et extrais TOUTES les informations possibles pour compléter le dossier de subvention.
-    Si une information est déjà présente mais imprécise, tente de la clarifier.
-    Si une information est manquante, cherche-la activement dans les documents.
+    SOIS EXHAUSTIF ET PRÉCIS. Si une information n'est pas explicitement écrite, déduis-la logiquement du contexte (ex: si c'est un schéma directeur sur 3 ans, la durée est 36 mois).
     
-    Champs à extraire (Format JSON uniquement) :
-    - title: Nom du projet
-    - theme: Thématique (ex: Numérique, Transition Éco, Industrie du futur)
-    - context: Contexte opérationnel (Besoins, historique, enjeux)
-    - projectType: Type de projet (ex: Investissement productif, R&D, Recrutement)
+    Champs à extraire (Format JSON uniquement, ne réponds rien d'autre) :
+    - title: Nom du projet (court et percutant)
+    - theme: Thématique (ex: Numérique, Transition Éco, Industrie du futur, Mobilité Durable)
+    - context: Contexte opérationnel détaillé (Besoins, historique, enjeux stratégiques, minimum 3 phrases)
+    - projectType: Type de projet détaillé (ex: Étude stratégique, Investissement matériel, R&D collaborative)
     - startDate: Date de début estimée (YYYY-MM-DD)
     - endDate: Date de fin estimée (YYYY-MM-DD)
-    - duration: Durée totale du projet (ex: 18 mois)
-    - target: Objectif principal (ce que le projet vise à accomplir)
-    - objectives: Détails techniques et opérationnels des objectifs
-    - expectedResults: Résultats quantitatifs et qualitatifs attendus
-    - location: Situation géographique précise (Département, Commune)
-    - financingPlan: Plan de financement détaillé (Budget prévisionnel, postes de dépenses)
+    - duration: Durée totale (ex: 36 mois)
+    - target: Objectif principal (l'impact final souhaité)
+    - objectives: Détails techniques et opérationnels des objectifs (liste à puces ou phrases structurées)
+    - expectedResults: Résultats quantitatifs et qualitatifs attendus (ex: -20% de CO2, 500 usagers/jour)
+    - location: Situation géographique précise (Département, Commune, Région)
+    - financingPlan: Plan de financement résumé (Budget total HT, subvention sollicitée, fonds propres)
     
-    Réponds uniquement au format JSON.`;
+    Réponds uniquement au format JSON valide.`;
 
     const parts: any[] = [{ text: prompt }];
     documents.forEach(doc => {
@@ -72,7 +71,7 @@ export const geminiService = {
 
     return withRetry(async () => {
       const response = await ai.models.generateContent({
-        model: "gemini-1.5-flash",
+        model: "models/gemini-1.5-flash",
         contents: [{ role: "user", parts }],
         config: {
           responseMimeType: "application/json",
@@ -91,14 +90,19 @@ export const geminiService = {
               expectedResults: { type: Type.STRING },
               location: { type: Type.STRING },
               financingPlan: { type: Type.STRING }
-            }
+            },
+            required: ["title", "theme", "context", "projectType", "startDate", "endDate", "duration", "target", "objectives", "expectedResults", "location", "financingPlan"]
           }
         }
       });
 
       try {
         const textValue = response.text;
-        return JSON.parse(textValue || "{}");
+        if (!textValue) {
+          console.warn("Réponse vide de Gemini");
+          return {};
+        }
+        return JSON.parse(textValue);
       } catch (e) {
         console.error("Échec du parsing de la réponse Gemini", e);
         return {};
@@ -120,7 +124,7 @@ export const geminiService = {
 
     return withRetry(async () => {
       const response = await ai.models.generateContent({
-        model: "gemini-1.5-flash",
+        model: "models/gemini-1.5-flash",
         contents: [{ role: "user", parts: [{ text: prompt }] }],
         config: {
           responseMimeType: "application/json",
@@ -168,7 +172,7 @@ export const geminiService = {
 
     return withRetry(async () => {
       const response = await ai.models.generateContent({
-        model: "gemini-1.5-flash",
+        model: "models/gemini-1.5-flash",
         contents: [{ role: "user", parts: [{ text: prompt }] }]
       });
       return response.text || "Erreur lors de la génération du document.";
