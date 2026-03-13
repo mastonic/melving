@@ -47,12 +47,13 @@ const ProjectDetail: React.FC<ProjectDetailProps> = ({ projectId, onBack }) => {
     setLoading(true);
     Array.from(files).forEach((file: File) => {
       const reader = new FileReader();
+      
       reader.onload = (event) => {
         const content = event.target?.result as string;
         const newDoc: DocumentFile = {
           id: crypto.randomUUID(),
           name: file.name,
-          type: file.type,
+          type: file.type || 'application/octet-stream',
           content: content,
           uploadDate: new Date().toISOString()
         };
@@ -65,41 +66,38 @@ const ProjectDetail: React.FC<ProjectDetailProps> = ({ projectId, onBack }) => {
         });
       };
       
+      // On lit en texte si c'est du texte, sinon en DataURL pour PDF/PPT/Images
       if (file.type === 'text/plain' || file.name.endsWith('.txt')) {
         reader.readAsText(file);
       } else {
         reader.readAsDataURL(file);
       }
     });
+
+    // Reset de l'input pour permettre de re-sélectionner le même fichier si besoin
+    e.target.value = '';
     setTimeout(() => setLoading(false), 800);
   };
 
   const handleRegenerateFromDocs = async () => {
+    console.log("Clic sur Scanner les documents...");
     if (!project || !project.documents || project.documents.length === 0) {
-      alert("Aucun document trouvé. Veuillez charger des fichiers texte (.txt) pour permettre l'analyse.");
+      alert("Aucun document trouvé. Veuillez charger des fichiers (TXT, PDF ou PPT) pour permettre l'analyse.");
       return;
     }
     
     // On force l'affichage de l'animation avant de lancer l'appel API
     setIsAnalyzing(true);
+    console.log("Animation d'analyse activée");
     
     // On laisse un court délai pour que le DOM se mette à jour et affiche l'overlay
     await new Promise(resolve => setTimeout(resolve, 500));
     
     try {
-      const textDocs = project.documents
-        .filter(d => d.type === 'text/plain' || d.name.endsWith('.txt'))
-        .map(d => d.content)
-        .join("\n\n---\n\n");
-
-      if (!textDocs) {
-        alert("L'IA nécessite des contenus textuels (.txt) pour extraire les informations manquantes.");
-        setIsAnalyzing(false);
-        return;
-      }
-
-      // Appel au service avec retry automatique intégré
-      const extracted = await geminiService.analyzeDocument(textDocs);
+      console.log("Appel au service Gemini pour analyse...");
+      // Appel au service avec tous les documents (multimodal)
+      const extracted = await geminiService.analyzeDocument(project.documents);
+      console.log("Données extraites reçues :", extracted);
       
       const updatedProject = { 
         ...project, 
@@ -111,6 +109,7 @@ const ProjectDetail: React.FC<ProjectDetailProps> = ({ projectId, onBack }) => {
       storage.saveProject(updatedProject);
 
       if (currentGrant && client) {
+        console.log("Régénération de la lettre d'intention...");
         const newLetter = await geminiService.generateDocument(client, updatedProject, currentGrant, "Lettre d'Intention");
         setGeneratedDoc(newLetter);
       }
@@ -119,16 +118,17 @@ const ProjectDetail: React.FC<ProjectDetailProps> = ({ projectId, onBack }) => {
       setTimeout(() => {
         setIsAnalyzing(false);
         setActiveTab('synthesis');
+        console.log("Analyse terminée avec succès");
       }, 2000);
 
     } catch (error: any) {
-      console.error("Erreur d'analyse :", error);
+      console.error("Erreur d'analyse détaillée :", error);
       setIsAnalyzing(false);
       
       if (error?.message?.includes('quota') || error?.status === 429) {
-        alert("Quota de l'API Gemini atteint. Veuillez patienter une minute avant de réessayer ou passer à une offre supérieure sur Google AI Studio.");
+        alert("Quota de l'API Gemini atteint. Veuillez patienter une minute avant de réessayer.");
       } else {
-        alert("Une erreur est survenue lors de l'analyse. Veuillez vérifier vos documents et votre connexion.");
+        alert("Une erreur est survenue lors de l'analyse : " + (error?.message || "Erreur inconnue"));
       }
     }
   };
@@ -317,12 +317,18 @@ const ProjectDetail: React.FC<ProjectDetailProps> = ({ projectId, onBack }) => {
               </div>
 
               <div className="bg-white rounded-[3rem] border-2 border-dashed border-slate-200 p-16 text-center relative group hover:border-blue-400 hover:bg-blue-50/20 transition-all cursor-pointer">
-                <input type="file" multiple onChange={handleFileUpload} className="absolute inset-0 opacity-0 cursor-pointer" />
-                <div className="w-20 h-20 bg-blue-50 rounded-3xl flex items-center justify-center text-blue-600 mx-auto mb-6 group-hover:scale-110 group-hover:bg-blue-600 group-hover:text-white transition-all shadow-inner">
+                <input 
+                  type="file" 
+                  multiple 
+                  accept=".txt,.pdf,.ppt,.pptx"
+                  onChange={handleFileUpload} 
+                  className="absolute inset-0 opacity-0 cursor-pointer z-20" 
+                />
+                <div className="w-20 h-20 bg-blue-50 rounded-3xl flex items-center justify-center text-blue-600 mx-auto mb-6 group-hover:scale-110 group-hover:bg-blue-600 group-hover:text-white transition-all shadow-inner relative z-10">
                   <i className="fas fa-cloud-upload-alt text-3xl"></i>
                 </div>
-                <h3 className="text-slate-900 font-black text-lg mb-2 tracking-tight">Ajouter des pièces justificatives</h3>
-                <p className="text-slate-400 text-xs font-bold uppercase tracking-widest">Le scanner IA traitera les fichiers .txt existants</p>
+                <h3 className="text-slate-900 font-black text-lg mb-2 tracking-tight relative z-10">Ajouter des pièces justificatives</h3>
+                <p className="text-slate-400 text-xs font-bold uppercase tracking-widest relative z-10">Formats supportés : TXT, PDF, PPT</p>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -335,7 +341,12 @@ const ProjectDetail: React.FC<ProjectDetailProps> = ({ projectId, onBack }) => {
                   >
                     <div className="flex items-center space-x-5">
                       <div className="w-14 h-14 bg-slate-50 rounded-2xl flex items-center justify-center text-slate-400 group-hover:bg-blue-600 group-hover:text-white transition-all shadow-sm">
-                        <i className={`fas ${doc.type.includes('text') || doc.name.endsWith('.txt') ? 'fa-file-lines text-xl' : 'fa-file-image text-xl'}`}></i>
+                        <i className={`fas ${
+                          doc.name.endsWith('.pdf') ? 'fa-file-pdf text-xl text-red-400' : 
+                          doc.name.endsWith('.ppt') || doc.name.endsWith('.pptx') ? 'fa-file-powerpoint text-xl text-orange-400' :
+                          doc.type.includes('text') || doc.name.endsWith('.txt') ? 'fa-file-lines text-xl' : 
+                          'fa-file-image text-xl'
+                        } group-hover:text-white`}></i>
                       </div>
                       <div className="text-left overflow-hidden">
                         <div className="text-sm font-black text-slate-900 truncate max-w-[180px]">{doc.name}</div>

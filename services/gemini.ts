@@ -1,9 +1,15 @@
 
 import { GoogleGenAI, Type } from "@google/genai";
-import { Client, Grant, Project } from "../types";
+import { Client, Grant, Project, DocumentFile } from "../types";
 
 // Helper to get a fresh instance of Gemini API client
-const getAI = () => new GoogleGenAI({ apiKey: process.env.API_KEY });
+const getAI = () => {
+  const key = (process.env.API_KEY || (window as any).GEMINI_API_KEY || localStorage.getItem('GEMINI_API_KEY') || "").trim();
+  if (!key || key === "undefined") {
+    console.error("API Key Gemini manquante ! Utilisez localStorage.setItem('GEMINI_API_KEY', 'votre_cle') pour la définir.");
+  }
+  return new GoogleGenAI(key);
+};
 
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
@@ -12,7 +18,8 @@ async function withRetry<T>(fn: () => Promise<T>, retries = 3, initialDelay = 20
   try {
     return await fn();
   } catch (error: any) {
-    const isQuotaError = error?.message?.includes('quota') || error?.status === 429 || error?.message?.includes('429');
+    const errorStr = (error?.message || "").toLowerCase();
+    const isQuotaError = errorStr.includes('quota') || error?.status === 429 || errorStr.includes('429');
     if (isQuotaError && retries > 0) {
       console.warn(`Quota atteint. Nouvelle tentative dans ${initialDelay}ms... (${retries} essais restants)`);
       await delay(initialDelay);
@@ -23,11 +30,13 @@ async function withRetry<T>(fn: () => Promise<T>, retries = 3, initialDelay = 20
 }
 
 export const geminiService = {
-  async analyzeDocument(docContent: string): Promise<Partial<Project>> {
+  async analyzeDocument(documents: DocumentFile[]): Promise<Partial<Project>> {
+    console.log("Démarrage de l'analyse IA multimodal sur", documents.length, "documents");
     const ai = getAI();
-    const prompt = `Tu es un expert en ingénierie de financement public. Analyse ce corpus de documents et extrais TOUTES les informations possibles pour compléter le dossier de subvention.
+    
+    const prompt = `Tu es un expert en ingénierie de financement public. Analyse les documents fournis (textes, PDF, etc.) et extrais TOUTES les informations possibles pour compléter le dossier de subvention.
     Si une information est déjà présente mais imprécise, tente de la clarifier.
-    Si une information est manquante, cherche-la activement dans le texte.
+    Si une information est manquante, cherche-la activement dans les documents.
     
     Champs à extraire (Format JSON uniquement) :
     - title: Nom du projet
@@ -43,13 +52,33 @@ export const geminiService = {
     - location: Situation géographique précise (Département, Commune)
     - financingPlan: Plan de financement détaillé (Budget prévisionnel, postes de dépenses)
     
-    CORPUS DE DOCUMENTS : 
-    ${docContent.substring(0, 15000)}`;
+    Réponds uniquement au format JSON.`;
+
+    // Préparation des parties (Texte + Fichiers)
+    const parts: any[] = [{ text: prompt }];
+    
+    documents.forEach(doc => {
+      if (doc.type === 'text/plain' || doc.name.endsWith('.txt')) {
+        parts.push({ text: `CONTENU DU FICHIER ${doc.name} :\n${doc.content}` });
+      } else if (doc.type === 'application/pdf' || doc.name.endsWith('.pdf')) {
+        const base64Data = doc.content.includes(',') ? doc.content.split(',')[1] : doc.content;
+        if (base64Data) {
+          parts.push({
+            inlineData: {
+              data: base64Data,
+              mimeType: "application/pdf"
+            }
+          });
+        }
+      } else {
+        console.warn(`Format non géré directement par l'IA : ${doc.name}`);
+      }
+    });
 
     return withRetry(async () => {
       const response = await ai.models.generateContent({
-        model: "gemini-3-flash-preview",
-        contents: prompt,
+        model: "gemini-1.5-flash",
+        contents: [{ role: "user", parts }],
         config: {
           responseMimeType: "application/json",
           responseSchema: {
@@ -75,7 +104,7 @@ export const geminiService = {
       try {
         return JSON.parse(response.text || "{}");
       } catch (e) {
-        console.error("Failed to parse Gemini response", e);
+        console.error("Échec du parsing de la réponse Gemini", e);
         return {};
       }
     });
@@ -93,8 +122,8 @@ export const geminiService = {
 
     return withRetry(async () => {
       const response = await ai.models.generateContent({
-        model: "gemini-3-flash-preview",
-        contents: prompt,
+        model: "gemini-1.5-flash",
+        contents: [{ role: "user", parts: [{ text: prompt }] }],
         config: {
           responseMimeType: "application/json",
           responseSchema: {
@@ -117,7 +146,7 @@ export const geminiService = {
       try {
         return JSON.parse(response.text || "[]");
       } catch (e) {
-        console.error("Failed to parse funding detection results", e);
+        console.error("Échec du parsing de la détection d'aides", e);
         return [];
       }
     });
@@ -140,8 +169,8 @@ export const geminiService = {
 
     return withRetry(async () => {
       const response = await ai.models.generateContent({
-        model: "gemini-3-flash-preview",
-        contents: prompt,
+        model: "gemini-1.5-flash",
+        contents: [{ role: "user", parts: [{ text: prompt }] }]
       });
       return response.text || "Erreur lors de la génération du document.";
     });
