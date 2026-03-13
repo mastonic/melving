@@ -97,9 +97,11 @@ const ProjectDetail: React.FC<ProjectDetailProps> = ({ projectId, onBack }) => {
       const extracted = await geminiService.analyzeDocument(project.documents);
       console.log("Données extraites reçues :", extracted);
 
-      const cleanExtracted = Object.fromEntries(
-        Object.entries(extracted || {}).filter(([_, v]) => v != null && v !== "")
-      );
+      // On ne filtre que les valeurs null/undefined, pas les chaînes vides 
+      // car l'IA pourrait vouloir vider un champ si jugé non pertinent
+      const cleanExtracted = extracted ? Object.fromEntries(
+        Object.entries(extracted).filter(([_, v]) => v != null && v !== "")
+      ) : {};
 
       const updatedProject = { 
         ...project, 

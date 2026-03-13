@@ -75,36 +75,26 @@ export const geminiService = {
         contents: [{ role: "user", parts }],
         config: {
           responseMimeType: "application/json",
-          responseSchema: {
-            type: Type.OBJECT,
-            properties: {
-              title: { type: Type.STRING },
-              theme: { type: Type.STRING },
-              context: { type: Type.STRING },
-              projectType: { type: Type.STRING },
-              startDate: { type: Type.STRING },
-              endDate: { type: Type.STRING },
-              duration: { type: Type.STRING },
-              target: { type: Type.STRING },
-              objectives: { type: Type.STRING },
-              expectedResults: { type: Type.STRING },
-              location: { type: Type.STRING },
-              financingPlan: { type: Type.STRING }
-            },
-            required: ["title", "theme", "context", "projectType", "startDate", "endDate", "duration", "target", "objectives", "expectedResults", "location", "financingPlan"]
-          }
+          // On évite responseSchema temporairement car il peut être trop restrictif avec required
+          // et causer des réponses vides si l'IA ne trouve pas tout.
         }
       });
 
       try {
-        const textValue = response.text;
+        let textValue = response.text || "";
+        // On nettoie le texte au cas où (markdown tags)
+        textValue = textValue.replace(/```json/g, "").replace(/```/g, "").trim();
+        
         if (!textValue) {
           console.warn("Réponse vide de Gemini");
           return {};
         }
-        return JSON.parse(textValue);
+
+        const parsed = JSON.parse(textValue);
+        console.log("Analyse réussie :", parsed);
+        return parsed;
       } catch (e) {
-        console.error("Échec du parsing de la réponse Gemini", e);
+        console.error("Échec du parsing de la réponse Gemini. Texte reçu:", response.text);
         return {};
       }
     });
@@ -128,26 +118,13 @@ export const geminiService = {
         contents: [{ role: "user", parts: [{ text: prompt }] }],
         config: {
           responseMimeType: "application/json",
-          responseSchema: {
-            type: Type.ARRAY,
-            items: {
-              type: Type.OBJECT,
-              properties: {
-                id: { type: Type.STRING },
-                title: { type: Type.STRING },
-                provider: { type: Type.STRING },
-                amount: { type: Type.STRING },
-                description: { type: Type.STRING }
-              },
-              required: ["id", "title", "provider", "amount", "description"]
-            }
-          }
         }
       });
 
       try {
-        const textValue = response.text;
-        return JSON.parse(textValue || "[]");
+        let textValue = response.text || "[]";
+        textValue = textValue.replace(/```json/g, "").replace(/```/g, "").trim();
+        return JSON.parse(textValue);
       } catch (e) {
         console.error("Échec du parsing de la détection d'aides", e);
         return [];
