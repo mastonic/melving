@@ -1,0 +1,7 @@
+{
+  "name": "FundingPilot",
+  "description": "Plateforme SaaS d'automatisation et de gestion de dossiers de financement pour consultants et entreprises en France et dans les DOM-TOM.",
+  "requestFramePermissions": [
+    "geolocation"
+  ]
+}
