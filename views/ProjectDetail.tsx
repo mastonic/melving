@@ -20,6 +20,8 @@ const ProjectDetail: React.FC<ProjectDetailProps> = ({ projectId, onBack }) => {
   const [currentGrant, setCurrentGrant] = useState<Grant | null>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [hoveredDoc, setHoveredDoc] = useState<string | null>(null);
+  const [noteContent, setNoteContent] = useState('');
+  const [showNoteInput, setShowNoteInput] = useState(false);
 
   useEffect(() => {
     const p = storage.getProject(projectId);
@@ -77,6 +79,34 @@ const ProjectDetail: React.FC<ProjectDetailProps> = ({ projectId, onBack }) => {
     // Reset de l'input pour permettre de re-sélectionner le même fichier si besoin
     e.target.value = '';
     setTimeout(() => setLoading(false), 800);
+  };
+
+  const handleAddNote = () => {
+    if (!noteContent.trim() || !project) return;
+    
+    const newDoc: DocumentFile = {
+      id: crypto.randomUUID(),
+      name: `Note Manuelle - ${new Date().toLocaleTimeString('fr-FR')}`,
+      type: 'text/plain',
+      content: noteContent,
+      uploadDate: new Date().toISOString()
+    };
+
+    const updated = { ...project, documents: [...(project.documents || []), newDoc] };
+    setProject(updated);
+    storage.saveProject(updated);
+    setNoteContent('');
+    setShowNoteInput(false);
+  };
+
+  const handleDeleteDoc = (docId: string) => {
+    if (!project) return;
+    const updated = { 
+      ...project, 
+      documents: project.documents.filter(d => d.id !== docId) 
+    };
+    setProject(updated);
+    storage.saveProject(updated);
   };
 
   const handleRegenerateFromDocs = async () => {
@@ -305,73 +335,126 @@ const ProjectDetail: React.FC<ProjectDetailProps> = ({ projectId, onBack }) => {
             </div>
           )}
 
-          {/* DOCUMENTS TAB */}
+          {/* SOURCES & KNOWLEDGE TAB (Notebook Style) */}
           {activeTab === 'docs' && (
-            <div className="space-y-6 animate-in slide-in-from-bottom-2 duration-500">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-xl font-black text-slate-900 tracking-tight">Pièces du dossier</h3>
+            <div className="space-y-8 animate-in slide-in-from-bottom-2 duration-500">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-2xl font-black text-slate-900 tracking-tight">Centre de Connaissances</h3>
+                  <p className="text-slate-500 text-xs font-bold uppercase tracking-widest mt-1">Sources analysées par l'intelligence cognitive</p>
+                </div>
                 <button 
                   onClick={handleRegenerateFromDocs}
-                  disabled={isAnalyzing}
-                  className={`bg-blue-600 text-white px-8 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-blue-700 hover:shadow-2xl transition-all flex items-center active:scale-95 ${isAnalyzing ? 'opacity-50 cursor-not-allowed' : 'shadow-xl shadow-blue-100'}`}
+                  disabled={isAnalyzing || !project.documents?.length}
+                  className={`bg-blue-600 text-white px-10 py-5 rounded-[2rem] text-[10px] font-black uppercase tracking-[0.2em] hover:bg-blue-700 hover:shadow-2xl transition-all flex items-center active:scale-95 ${isAnalyzing ? 'opacity-50 cursor-not-allowed' : 'shadow-xl shadow-blue-100'}`}
                 >
-                  {isAnalyzing ? <i className="fas fa-circle-notch fa-spin mr-3"></i> : <i className="fas fa-magic mr-3"></i>}
-                  Scanner les documents téléchargés
+                  {isAnalyzing ? <i className="fas fa-brain fa-sm mr-4 animate-pulse"></i> : <i className="fas fa-magic mr-4"></i>}
+                  Lancer l'analyse croisée
                 </button>
               </div>
 
-              <div className="bg-white rounded-[3rem] border-2 border-dashed border-slate-200 p-16 text-center relative group hover:border-blue-400 hover:bg-blue-50/20 transition-all cursor-pointer">
-                <input 
-                  type="file" 
-                  multiple 
-                  accept=".txt,.pdf,.ppt,.pptx"
-                  onChange={handleFileUpload} 
-                  className="absolute inset-0 opacity-0 cursor-pointer z-20" 
-                />
-                <div className="w-20 h-20 bg-blue-50 rounded-3xl flex items-center justify-center text-blue-600 mx-auto mb-6 group-hover:scale-110 group-hover:bg-blue-600 group-hover:text-white transition-all shadow-inner relative z-10">
-                  <i className="fas fa-cloud-upload-alt text-3xl"></i>
-                </div>
-                <h3 className="text-slate-900 font-black text-lg mb-2 tracking-tight relative z-10">Ajouter des pièces justificatives</h3>
-                <p className="text-slate-400 text-xs font-bold uppercase tracking-widest relative z-10">Formats supportés : TXT, PDF, PPT</p>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {project.documents?.map(doc => (
-                  <div 
-                    key={doc.id} 
-                    onMouseEnter={() => setHoveredDoc(doc.id)}
-                    onMouseLeave={() => setHoveredDoc(null)}
-                    className="bg-white p-6 rounded-[2rem] border border-slate-200 flex items-center justify-between group hover:shadow-2xl hover:border-blue-300 transition-all relative overflow-visible"
-                  >
-                    <div className="flex items-center space-x-5">
-                      <div className="w-14 h-14 bg-slate-50 rounded-2xl flex items-center justify-center text-slate-400 group-hover:bg-blue-600 group-hover:text-white transition-all shadow-sm">
-                        <i className={`fas ${
-                          doc.name.endsWith('.pdf') ? 'fa-file-pdf text-xl text-red-400' : 
-                          doc.name.endsWith('.ppt') || doc.name.endsWith('.pptx') ? 'fa-file-powerpoint text-xl text-orange-400' :
-                          doc.type.includes('text') || doc.name.endsWith('.txt') ? 'fa-file-lines text-xl' : 
-                          'fa-file-image text-xl'
-                        } group-hover:text-white`}></i>
-                      </div>
-                      <div className="text-left overflow-hidden">
-                        <div className="text-sm font-black text-slate-900 truncate max-w-[180px]">{doc.name}</div>
-                        <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">{new Date(doc.uploadDate).toLocaleDateString('fr-FR')}</div>
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                {/* Upload & Note Sidebar */}
+                <div className="lg:col-span-1 space-y-6">
+                  <div className="bg-white p-8 rounded-[2.5rem] border border-slate-200 shadow-sm space-y-6">
+                    <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-4 flex items-center">
+                      <i className="fas fa-plus-circle mr-2"></i> Ajouter une source
+                    </h4>
+                    
+                    {/* File Upload */}
+                    <div className="relative group">
+                      <input 
+                        type="file" 
+                        multiple 
+                        accept=".txt,.pdf,.ppt,.pptx"
+                        onChange={handleFileUpload} 
+                        className="absolute inset-0 opacity-0 cursor-pointer z-10" 
+                      />
+                      <div className="p-6 border-2 border-dashed border-slate-100 rounded-3xl group-hover:bg-blue-50 group-hover:border-blue-200 transition-all text-center">
+                        <i className="fas fa-file-upload text-blue-600 mb-3 block text-xl"></i>
+                        <span className="text-[10px] font-black uppercase text-slate-600">Importer Fichiers</span>
                       </div>
                     </div>
-                    
-                    {hoveredDoc === doc.id && (
-                      <div className="absolute z-[70] bottom-full left-0 mb-4 w-72 bg-slate-900 text-white p-6 rounded-[2rem] text-[11px] shadow-2xl animate-in fade-in slide-in-from-bottom-4 pointer-events-none border border-white/10 backdrop-blur-md">
-                        <div className="font-black border-b border-white/10 pb-3 mb-3 uppercase text-blue-400 flex items-center tracking-widest">
-                          <i className="fas fa-eye mr-2"></i> Aperçu rapide
-                        </div>
-                        <div className="line-clamp-6 italic text-slate-300 font-medium leading-relaxed">
-                          {doc.type.includes('text') || doc.name.endsWith('.txt') 
-                            ? (doc.content.substring(0, 400) || "Contenu texte vide.")
-                            : "Aperçu masqué pour les données binaires."}
-                        </div>
+
+                    {/* Add Note Button */}
+                    <button 
+                      onClick={() => setShowNoteInput(!showNoteInput)}
+                      className={`w-full p-6 border-2 border-slate-50 rounded-3xl flex flex-col items-center transition-all ${showNoteInput ? 'bg-slate-900 text-white' : 'hover:bg-slate-50'}`}
+                    >
+                      <i className={`fas fa-pen-nib mb-3 text-xl ${showNoteInput ? 'text-blue-400' : 'text-slate-400'}`}></i>
+                      <span className="text-[10px] font-black uppercase">Saisir une Note</span>
+                    </button>
+
+                    {showNoteInput && (
+                      <div className="space-y-4 pt-2 animate-in fade-in slide-in-from-top-4">
+                        <textarea 
+                          className="w-full p-4 bg-slate-50 rounded-2xl border border-slate-100 text-xs font-medium outline-none focus:ring-2 focus:ring-blue-100 min-h-[150px]"
+                          placeholder="Collez ici des notes, comptes-rendus ou briefings..."
+                          value={noteContent}
+                          onChange={e => setNoteContent(e.target.value)}
+                        />
+                        <button 
+                          onClick={handleAddNote}
+                          className="w-full py-4 bg-blue-600 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest"
+                        >
+                          Enregistrer la note
+                        </button>
                       </div>
                     )}
                   </div>
-                ))}
+                </div>
+
+                {/* Sources List */}
+                <div className="lg:col-span-2">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {project.documents?.length === 0 ? (
+                      <div className="col-span-full py-32 text-center bg-slate-50/50 rounded-[3rem] border border-dashed border-slate-200">
+                        <div className="text-slate-300 text-4xl mb-4"><i className="fas fa-folder-open"></i></div>
+                        <p className="text-slate-400 font-black text-[10px] uppercase tracking-widest">Aucune source pour le moment</p>
+                      </div>
+                    ) : (
+                      project.documents?.map(doc => (
+                        <div 
+                          key={doc.id} 
+                          onMouseEnter={() => setHoveredDoc(doc.id)}
+                          onMouseLeave={() => setHoveredDoc(null)}
+                          className="bg-white p-5 rounded-[2rem] border border-slate-200 flex items-center justify-between group hover:shadow-xl hover:border-blue-200 transition-all relative"
+                        >
+                          <div className="flex items-center space-x-4 min-w-0 pr-10">
+                            <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shadow-sm ${
+                              doc.name.includes('Note') ? 'bg-amber-50 text-amber-600' : 'bg-slate-50 text-slate-400'
+                            }`}>
+                              <i className={`fas ${
+                                doc.name.includes('Note') ? 'fa-sticky-note' :
+                                doc.name.endsWith('.pdf') ? 'fa-file-pdf' : 'fa-file-alt'
+                              }`}></i>
+                            </div>
+                            <div className="truncate">
+                              <div className="text-xs font-black text-slate-900 truncate">{doc.name}</div>
+                              <div className="text-[9px] font-bold text-slate-400 uppercase mt-1">{new Date(doc.uploadDate).toLocaleDateString('fr-FR')}</div>
+                            </div>
+                          </div>
+
+                          <button 
+                            onClick={(e) => { e.stopPropagation(); handleDeleteDoc(doc.id); }}
+                            className="absolute right-4 opacity-0 group-hover:opacity-100 w-8 h-8 rounded-full bg-red-50 text-red-500 hover:bg-red-500 hover:text-white transition-all flex items-center justify-center"
+                          >
+                            <i className="fas fa-times text-xs"></i>
+                          </button>
+
+                          {hoveredDoc === doc.id && (
+                            <div className="absolute z-[100] top-full mt-2 left-0 w-72 bg-slate-900 p-6 rounded-[2rem] shadow-2xl border border-white/10 animate-in fade-in slide-in-from-top-2 pointer-events-none">
+                              <p className="text-blue-400 text-[9px] font-black uppercase mb-3">Extrait du contenu</p>
+                              <p className="text-slate-400 text-[11px] italic line-clamp-4 leading-relaxed">
+                                {doc.content.substring(0, 300)}...
+                              </p>
+                            </div>
+                          )}
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
               </div>
             </div>
           )}
