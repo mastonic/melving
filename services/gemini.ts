@@ -133,19 +133,29 @@ export const geminiService = {
   },
 
   async generateDocument(client: Client, project: Project, grant: Grant, docType: string): Promise<string> {
+    console.log("Génération de document avec les données :", { project, grant });
     const ai = getAI();
-    const prompt = `Rédige une ${docType} officielle de haute qualité pour solliciter l'aide "${grant.title}" auprès de ${grant.provider}.
-    Utilise les informations suivantes pour personnaliser le courrier :
-    - Client : ${client.name} (${client.region})
-    - Projet : ${project.title}
-    - Contexte : ${project.context}
-    - Objectif : ${project.target}
-    - Détails : ${project.objectives}
-    - Lieu : ${project.location}
-    - Dates : Du ${project.startDate} au ${project.endDate}
-    - Budget : ${project.financingPlan}
+    const prompt = `Rédige une ${docType} officielle de haute qualité, EXTRÊMEMENT DÉTAILLÉE et PERSONNALISÉE pour solliciter l'aide "${grant.title}" auprès de ${grant.provider}.
     
-    Le ton doit être formel, convaincant et structuré.`;
+    CONSIGNES CRITIQUES :
+    1. TU DOIS UTILISER LES DONNÉES CI-DESSOUS POUR CHAQUE PARAGRAPHE. Ne fais pas un modèle vide.
+    2. Intègre les termes techniques, les dates et les montants financiers fournis.
+    3. Le ton doit être expert, convaincant et formel.
+    4. Structure : Objet, Contexte, Objectifs techniques, Impact attendu, Plan de financement, Conclusion.
+
+    DONNÉES À INTÉGRER IMPÉRATIVEMENT :
+    - Entreprise porteuse : ${client.name} (Région: ${client.region}, Secteur: ${client.sector})
+    - Intitulé du Projet : ${project.title}
+    - Contexte opérationnel : ${project.context || "À détailler selon le projet"}
+    - Type de projet : ${project.projectType || "Non spécifié"}
+    - Objectif global : ${project.target || "Non spécifié"}
+    - Détails techniques des objectifs : ${project.objectives || "Non spécifié"}
+    - Résultats attendus : ${project.expectedResults || "Non spécifié"}
+    - Localisation de l'opération : ${project.location || "Non spécifié"}
+    - Calendrier d'exécution : Du ${project.startDate || "en attente"} au ${project.endDate || "en attente"} (Durée: ${project.duration || "Non spécifiée"})
+    - Plan de financement : ${project.financingPlan || "Budget disponible dans le plan détaillé"}
+    
+    Rédige la lettre complète prête à être signée.`;
 
     return withRetry(async () => {
       const response = await ai.models.generateContent({

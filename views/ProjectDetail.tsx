@@ -435,6 +435,21 @@ const ProjectDetail: React.FC<ProjectDetailProps> = ({ projectId, onBack }) => {
                     <h3 className="font-black text-slate-900 uppercase text-xs tracking-widest">Éditeur de Lettre</h3>
                   </div>
                   <div className="flex space-x-3">
+                    <button 
+                      onClick={async () => {
+                        if (client && project && currentGrant) {
+                          setLoading(true);
+                          const doc = await geminiService.generateDocument(client, project, currentGrant, "Lettre d'Intention");
+                          setGeneratedDoc(doc);
+                          setLoading(false);
+                        }
+                      }}
+                      disabled={loading}
+                      className="px-6 py-4 bg-blue-50 text-blue-700 rounded-2xl text-[10px] font-black uppercase hover:bg-blue-100 transition-all active:scale-95"
+                    >
+                      {loading ? <i className="fas fa-circle-notch fa-spin mr-2"></i> : <i className="fas fa-sync-alt mr-2"></i>}
+                      Régénérer
+                    </button>
                     <button onClick={handleValidateAndSave} className="px-6 py-4 bg-green-600 text-white rounded-2xl text-[10px] font-black uppercase hover:bg-green-700 transition-all shadow-lg shadow-green-100 active:scale-95">
                       <i className="fas fa-check-double mr-2"></i> Valider Dossier
                     </button>
