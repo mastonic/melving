@@ -465,9 +465,15 @@ const ProjectDetail: React.FC<ProjectDetailProps> = ({ projectId, onBack }) => {
                 <button 
                   onClick={async () => {
                     setLoading(true);
-                    const res = await geminiService.detectFunding(client, project);
-                    setGrants(res);
-                    setLoading(false);
+                    try {
+                      const res = await geminiService.detectFunding(client, project);
+                      setGrants(res);
+                    } catch (e: any) {
+                      console.error("Erreur détection:", e);
+                      alert("Impossible de lancer la détection : " + (e?.message || "Erreur serveur"));
+                    } finally {
+                      setLoading(false);
+                    }
                   }}
                   className="bg-white text-blue-600 px-10 py-5 rounded-[2rem] font-black text-xs uppercase shadow-2xl hover:scale-105 transition-transform active:scale-95"
                 >

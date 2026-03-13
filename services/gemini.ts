@@ -6,9 +6,10 @@ import { Client, Grant, Project, DocumentFile } from "../types";
 const getAI = () => {
   const key = (process.env.API_KEY || (window as any).GEMINI_API_KEY || localStorage.getItem('GEMINI_API_KEY') || "").trim();
   if (!key || key === "undefined") {
-    console.error("API Key Gemini manquante ! Utilisez localStorage.setItem('GEMINI_API_KEY', 'votre_cle') pour la définir.");
+    console.error("API Key Gemini manquante !");
   }
-  return new GoogleGenAI(key);
+  // Pour @google/genai, on passe un objet d'options
+  return new GoogleGenAI({ apiKey: key });
 };
 
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
@@ -54,24 +55,18 @@ export const geminiService = {
     
     Réponds uniquement au format JSON.`;
 
-    // Préparation des parties (Texte + Fichiers)
     const parts: any[] = [{ text: prompt }];
-    
     documents.forEach(doc => {
       if (doc.type === 'text/plain' || doc.name.endsWith('.txt')) {
         parts.push({ text: `CONTENU DU FICHIER ${doc.name} :\n${doc.content}` });
       } else if (doc.type === 'application/pdf' || doc.name.endsWith('.pdf')) {
         const base64Data = doc.content.includes(',') ? doc.content.split(',')[1] : doc.content;
-        if (base64Data) {
-          parts.push({
-            inlineData: {
-              data: base64Data,
-              mimeType: "application/pdf"
-            }
-          });
-        }
-      } else {
-        console.warn(`Format non géré directement par l'IA : ${doc.name}`);
+        parts.push({
+          inlineData: {
+            data: base64Data,
+            mimeType: "application/pdf"
+          }
+        });
       }
     });
 
@@ -102,7 +97,8 @@ export const geminiService = {
       });
 
       try {
-        return JSON.parse(response.text || "{}");
+        const textValue = response.text;
+        return JSON.parse(textValue || "{}");
       } catch (e) {
         console.error("Échec du parsing de la réponse Gemini", e);
         return {};
@@ -111,7 +107,9 @@ export const geminiService = {
   },
 
   async detectFunding(client: Client, project: Project): Promise<Grant[]> {
+    console.log("Démarrage de la détection d'aides pour", project.title);
     const ai = getAI();
+
     const prompt = `Trouve des aides réelles et actuelles pour : ${client.name} situé en ${client.region}.
     Secteur: ${client.sector}, Taille: ${client.size}.
     Projet: ${project.title}. Thématique: ${project.theme}.
@@ -144,7 +142,8 @@ export const geminiService = {
       });
 
       try {
-        return JSON.parse(response.text || "[]");
+        const textValue = response.text;
+        return JSON.parse(textValue || "[]");
       } catch (e) {
         console.error("Échec du parsing de la détection d'aides", e);
         return [];
