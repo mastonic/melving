@@ -2,7 +2,6 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import { Client, Grant, Project, DocumentFile } from "../types";
 
-// Helper to get a fresh instance of Gemini API client
 const getAI = () => {
     const key = (
       (import.meta as any).env?.VITE_GEMINI_API_KEY || 
@@ -16,10 +15,10 @@ const getAI = () => {
       throw new Error("apikey_missing");
     }
     
-    // Initialisation avec forçage de la version v1 pour plus de stabilité
+    // Switch to v1beta which often has better support for some features in the new SDK
     return new GoogleGenAI({ 
       apiKey: key,
-      apiVersion: 'v1' 
+      apiVersion: 'v1beta' 
     });
 };
 
@@ -38,8 +37,8 @@ async function withRetry<T>(fn: () => Promise<T>, retries = 3, initialDelay = 20
   }
 }
 
-// Utilisation de gemini-2.0-flash, plus performant et mieux supporté par ce SDK
-const MODEL_NAME = "gemini-2.0-flash";
+// Using gemini-1.5-flash which is most stable across versions
+const MODEL_NAME = "gemini-1.5-flash";
 
 export const geminiService = {
   async analyzeDocument(input: DocumentFile[] | string): Promise<Partial<Project>> {
@@ -57,11 +56,13 @@ export const geminiService = {
     ${corpus}`;
 
     return withRetry(async () => {
+      // Trying the most compatible call structure
       const response = await ai.models.generateContent({
         model: MODEL_NAME,
         contents: prompt,
         config: {
           responseMimeType: "application/json",
+          // Fallback schema if natively supported, otherwise we rely on prompt
           responseSchema: {
             type: Type.OBJECT,
             properties: {
@@ -81,7 +82,15 @@ export const geminiService = {
           }
         }
       });
-      return JSON.parse(response.text || "{}");
+      
+      const text = response.text || "{}";
+      try {
+        return JSON.parse(text);
+      } catch (e) {
+        // Fallback: extract JSON if buried in Markdown
+        const jsonMatch = text.match(/\{[\s\S]*\}/);
+        return jsonMatch ? JSON.parse(jsonMatch[0]) : {};
+      }
     });
   },
 
@@ -114,7 +123,13 @@ export const geminiService = {
           }
         }
       });
-      return JSON.parse(response.text || "[]");
+      const text = response.text || "[]";
+      try {
+        return JSON.parse(text);
+      } catch (e) {
+        const jsonMatch = text.match(/\[[\s\S]*\]/);
+        return jsonMatch ? JSON.parse(jsonMatch[0]) : [];
+      }
     });
   },
 
