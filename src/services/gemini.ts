@@ -24,14 +24,19 @@ const getAI = () => {
 
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
-async function withRetry<T>(fn: () => Promise<T>, retries = 3, initialDelay = 2000): Promise<T> {
+async function withRetry<T>(fn: () => Promise<T>, retries = 5, initialDelay = 10000): Promise<T> {
   try {
     return await fn();
   } catch (error: any) {
-    const isQuotaError = error?.message?.includes('quota') || error?.status === 429;
+    const isQuotaError = 
+      error?.message?.includes('quota') || 
+      error?.message?.includes('RESOURCE_EXHAUSTED') ||
+      error?.status === 429;
+      
     if (isQuotaError && retries > 0) {
+      console.warn(`Flux saturé. Nouvelle tentative dans ${initialDelay/1000}s... (${retries} essais restants)`);
       await delay(initialDelay);
-      return withRetry(fn, retries - 1, initialDelay * 2);
+      return withRetry(fn, retries - 1, initialDelay + 10000); // Incremental backoff + 10s each time
     }
     throw error;
   }
