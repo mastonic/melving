@@ -72,7 +72,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onSelectProject, onCreateNew }) =
           <div className="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden">
             <div className="px-8 py-6 border-b border-slate-100 bg-slate-50/30 flex items-center justify-between">
               <h3 className="font-extrabold text-slate-900 tracking-tight flex items-center">
-                <i className="fas fa-database mr-3 text-blue-600"></i> Base de données des dossiers
+                <i className="fas fa-list-ul mr-3 text-blue-600"></i> Dossiers en cours
               </h3>
               <span className="text-[10px] font-black uppercase tracking-widest text-slate-400 bg-slate-100 px-2 py-1 rounded">
                 {filteredProjects.length} Projets
@@ -107,26 +107,12 @@ const Dashboard: React.FC<DashboardProps> = ({ onSelectProject, onCreateNew }) =
                           <div className="text-[10px] text-slate-400 font-black uppercase tracking-tight">Dernière modif.</div>
                         </td>
                         <td className="px-8 py-6 text-right">
-                          <div className="flex items-center justify-end space-x-2">
-                            <button 
-                              onClick={() => onSelectProject(project.id)}
-                              className="bg-white border border-slate-200 text-slate-700 px-5 py-2 rounded-xl text-xs font-bold hover:bg-blue-600 hover:text-white hover:border-blue-600 transition-all shadow-sm"
-                            >
-                              Détails
-                            </button>
-                            <button 
-                              onClick={() => {
-                                if (window.confirm("Supprimer ce dossier définitivement ?")) {
-                                  storage.deleteProject(project.id);
-                                  setProjects(storage.getProjects().sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()));
-                                }
-                              }}
-                              className="p-2 text-slate-300 hover:text-red-500 transition-colors"
-                              title="Supprimer"
-                            >
-                              <i className="fas fa-trash-can"></i>
-                            </button>
-                          </div>
+                          <button 
+                            onClick={() => onSelectProject(project.id)}
+                            className="bg-white border border-slate-200 text-slate-700 px-5 py-2 rounded-xl text-xs font-bold hover:bg-blue-600 hover:text-white hover:border-blue-600 transition-all shadow-sm"
+                          >
+                            Détails <i className="fas fa-arrow-right ml-2 opacity-30"></i>
+                          </button>
                         </td>
                       </tr>
                     ))}

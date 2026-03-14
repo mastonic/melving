@@ -20,8 +20,6 @@ const ProjectDetail: React.FC<ProjectDetailProps> = ({ projectId, onBack }) => {
   const [currentGrant, setCurrentGrant] = useState<Grant | null>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [hoveredDoc, setHoveredDoc] = useState<string | null>(null);
-  const [noteContent, setNoteContent] = useState('');
-  const [showNoteInput, setShowNoteInput] = useState(false);
 
   useEffect(() => {
     const p = storage.getProject(projectId);
@@ -49,13 +47,12 @@ const ProjectDetail: React.FC<ProjectDetailProps> = ({ projectId, onBack }) => {
     setLoading(true);
     Array.from(files).forEach((file: File) => {
       const reader = new FileReader();
-      
       reader.onload = (event) => {
         const content = event.target?.result as string;
         const newDoc: DocumentFile = {
           id: crypto.randomUUID(),
           name: file.name,
-          type: file.type || 'application/octet-stream',
+          type: file.type,
           content: content,
           uploadDate: new Date().toISOString()
         };
@@ -68,74 +65,45 @@ const ProjectDetail: React.FC<ProjectDetailProps> = ({ projectId, onBack }) => {
         });
       };
       
-      // On lit en texte si c'est du texte, sinon en DataURL pour PDF/PPT/Images
       if (file.type === 'text/plain' || file.name.endsWith('.txt')) {
         reader.readAsText(file);
       } else {
         reader.readAsDataURL(file);
       }
     });
-
-    // Reset de l'input pour permettre de re-sélectionner le même fichier si besoin
-    e.target.value = '';
     setTimeout(() => setLoading(false), 800);
   };
 
-  const handleAddNote = () => {
-    if (!noteContent.trim() || !project) return;
-    
-    const newDoc: DocumentFile = {
-      id: crypto.randomUUID(),
-      name: `Note Manuelle - ${new Date().toLocaleTimeString('fr-FR')}`,
-      type: 'text/plain',
-      content: noteContent,
-      uploadDate: new Date().toISOString()
-    };
-
-    const updated = { ...project, documents: [...(project.documents || []), newDoc] };
-    setProject(updated);
-    storage.saveProject(updated);
-    setNoteContent('');
-    setShowNoteInput(false);
-  };
-
-  const handleDeleteDoc = (docId: string) => {
-    if (!project) return;
-    const updated = { 
-      ...project, 
-      documents: project.documents.filter(d => d.id !== docId) 
-    };
-    setProject(updated);
-    storage.saveProject(updated);
-  };
-
   const handleRegenerateFromDocs = async () => {
-    console.log("Clic sur Scanner les documents...");
     if (!project || !project.documents || project.documents.length === 0) {
-      alert("Aucun document trouvé. Veuillez charger des fichiers (TXT, PDF ou PPT) pour permettre l'analyse.");
+      alert("Aucun document trouvé. Veuillez charger des fichiers texte (.txt) pour permettre l'analyse.");
       return;
     }
     
     // On force l'affichage de l'animation avant de lancer l'appel API
     setIsAnalyzing(true);
-    console.log("Animation d'analyse activée");
     
     // On laisse un court délai pour que le DOM se mette à jour et affiche l'overlay
     await new Promise(resolve => setTimeout(resolve, 500));
     
     try {
-      const extracted = await geminiService.analyzeDocument(project.documents);
-      console.log("Données extraites reçues :", extracted);
+      const textDocs = project.documents
+        .filter(d => d.type === 'text/plain' || d.name.endsWith('.txt'))
+        .map(d => d.content)
+        .join("\n\n---\n\n");
 
-      // On ne filtre que les valeurs null/undefined, pas les chaînes vides 
-      // car l'IA pourrait vouloir vider un champ si jugé non pertinent
-      const cleanExtracted = extracted ? Object.fromEntries(
-        Object.entries(extracted).filter(([_, v]) => v != null && v !== "")
-      ) : {};
+      if (!textDocs) {
+        alert("L'IA nécessite des contenus textuels (.txt) pour extraire les informations manquantes.");
+        setIsAnalyzing(false);
+        return;
+      }
 
+      // Appel au service avec retry automatique intégré
+      const extracted = await geminiService.analyzeDocument(textDocs);
+      
       const updatedProject = { 
         ...project, 
-        ...cleanExtracted, 
+        ...extracted, 
         updatedAt: new Date().toISOString() 
       };
 
@@ -143,7 +111,6 @@ const ProjectDetail: React.FC<ProjectDetailProps> = ({ projectId, onBack }) => {
       storage.saveProject(updatedProject);
 
       if (currentGrant && client) {
-        console.log("Régénération de la lettre d'intention...");
         const newLetter = await geminiService.generateDocument(client, updatedProject, currentGrant, "Lettre d'Intention");
         setGeneratedDoc(newLetter);
       }
@@ -152,17 +119,16 @@ const ProjectDetail: React.FC<ProjectDetailProps> = ({ projectId, onBack }) => {
       setTimeout(() => {
         setIsAnalyzing(false);
         setActiveTab('synthesis');
-        console.log("Analyse terminée avec succès");
       }, 2000);
 
     } catch (error: any) {
-      console.error("Erreur d'analyse détaillée :", error);
+      console.error("Erreur d'analyse :", error);
       setIsAnalyzing(false);
       
       if (error?.message?.includes('quota') || error?.status === 429) {
-        alert("Quota de l'API Gemini atteint. Veuillez patienter une minute avant de réessayer.");
+        alert("Quota de l'API Gemini atteint. Veuillez patienter une minute avant de réessayer ou passer à une offre supérieure sur Google AI Studio.");
       } else {
-        alert("Une erreur est survenue lors de l'analyse : " + (error?.message || "Erreur inconnue"));
+        alert("Une erreur est survenue lors de l'analyse. Veuillez vérifier vos documents et votre connexion.");
       }
     }
   };
@@ -335,126 +301,62 @@ const ProjectDetail: React.FC<ProjectDetailProps> = ({ projectId, onBack }) => {
             </div>
           )}
 
-          {/* SOURCES & KNOWLEDGE TAB (Notebook Style) */}
+          {/* DOCUMENTS TAB */}
           {activeTab === 'docs' && (
-            <div className="space-y-8 animate-in slide-in-from-bottom-2 duration-500">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="text-2xl font-black text-slate-900 tracking-tight">Centre de Connaissances</h3>
-                  <p className="text-slate-500 text-xs font-bold uppercase tracking-widest mt-1">Sources analysées par l'intelligence cognitive</p>
-                </div>
+            <div className="space-y-6 animate-in slide-in-from-bottom-2 duration-500">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-xl font-black text-slate-900 tracking-tight">Pièces du dossier</h3>
                 <button 
                   onClick={handleRegenerateFromDocs}
-                  disabled={isAnalyzing || !project.documents?.length}
-                  className={`bg-blue-600 text-white px-10 py-5 rounded-[2rem] text-[10px] font-black uppercase tracking-[0.2em] hover:bg-blue-700 hover:shadow-2xl transition-all flex items-center active:scale-95 ${isAnalyzing ? 'opacity-50 cursor-not-allowed' : 'shadow-xl shadow-blue-100'}`}
+                  disabled={isAnalyzing}
+                  className={`bg-blue-600 text-white px-8 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-blue-700 hover:shadow-2xl transition-all flex items-center active:scale-95 ${isAnalyzing ? 'opacity-50 cursor-not-allowed' : 'shadow-xl shadow-blue-100'}`}
                 >
-                  {isAnalyzing ? <i className="fas fa-brain fa-sm mr-4 animate-pulse"></i> : <i className="fas fa-magic mr-4"></i>}
-                  Lancer l'analyse croisée
+                  {isAnalyzing ? <i className="fas fa-circle-notch fa-spin mr-3"></i> : <i className="fas fa-magic mr-3"></i>}
+                  Scanner les documents téléchargés
                 </button>
               </div>
 
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                {/* Upload & Note Sidebar */}
-                <div className="lg:col-span-1 space-y-6">
-                  <div className="bg-white p-8 rounded-[2.5rem] border border-slate-200 shadow-sm space-y-6">
-                    <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-4 flex items-center">
-                      <i className="fas fa-plus-circle mr-2"></i> Ajouter une source
-                    </h4>
-                    
-                    {/* File Upload */}
-                    <div className="relative group">
-                      <input 
-                        type="file" 
-                        multiple 
-                        accept=".txt,.pdf,.ppt,.pptx"
-                        onChange={handleFileUpload} 
-                        className="absolute inset-0 opacity-0 cursor-pointer z-10" 
-                      />
-                      <div className="p-6 border-2 border-dashed border-slate-100 rounded-3xl group-hover:bg-blue-50 group-hover:border-blue-200 transition-all text-center">
-                        <i className="fas fa-file-upload text-blue-600 mb-3 block text-xl"></i>
-                        <span className="text-[10px] font-black uppercase text-slate-600">Importer Fichiers</span>
+              <div className="bg-white rounded-[3rem] border-2 border-dashed border-slate-200 p-16 text-center relative group hover:border-blue-400 hover:bg-blue-50/20 transition-all cursor-pointer">
+                <input type="file" multiple onChange={handleFileUpload} className="absolute inset-0 opacity-0 cursor-pointer" />
+                <div className="w-20 h-20 bg-blue-50 rounded-3xl flex items-center justify-center text-blue-600 mx-auto mb-6 group-hover:scale-110 group-hover:bg-blue-600 group-hover:text-white transition-all shadow-inner">
+                  <i className="fas fa-cloud-upload-alt text-3xl"></i>
+                </div>
+                <h3 className="text-slate-900 font-black text-lg mb-2 tracking-tight">Ajouter des pièces justificatives</h3>
+                <p className="text-slate-400 text-xs font-bold uppercase tracking-widest">Le scanner IA traitera les fichiers .txt existants</p>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {project.documents?.map(doc => (
+                  <div 
+                    key={doc.id} 
+                    onMouseEnter={() => setHoveredDoc(doc.id)}
+                    onMouseLeave={() => setHoveredDoc(null)}
+                    className="bg-white p-6 rounded-[2rem] border border-slate-200 flex items-center justify-between group hover:shadow-2xl hover:border-blue-300 transition-all relative overflow-visible"
+                  >
+                    <div className="flex items-center space-x-5">
+                      <div className="w-14 h-14 bg-slate-50 rounded-2xl flex items-center justify-center text-slate-400 group-hover:bg-blue-600 group-hover:text-white transition-all shadow-sm">
+                        <i className={`fas ${doc.type.includes('text') || doc.name.endsWith('.txt') ? 'fa-file-lines text-xl' : 'fa-file-image text-xl'}`}></i>
+                      </div>
+                      <div className="text-left overflow-hidden">
+                        <div className="text-sm font-black text-slate-900 truncate max-w-[180px]">{doc.name}</div>
+                        <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">{new Date(doc.uploadDate).toLocaleDateString('fr-FR')}</div>
                       </div>
                     </div>
-
-                    {/* Add Note Button */}
-                    <button 
-                      onClick={() => setShowNoteInput(!showNoteInput)}
-                      className={`w-full p-6 border-2 border-slate-50 rounded-3xl flex flex-col items-center transition-all ${showNoteInput ? 'bg-slate-900 text-white' : 'hover:bg-slate-50'}`}
-                    >
-                      <i className={`fas fa-pen-nib mb-3 text-xl ${showNoteInput ? 'text-blue-400' : 'text-slate-400'}`}></i>
-                      <span className="text-[10px] font-black uppercase">Saisir une Note</span>
-                    </button>
-
-                    {showNoteInput && (
-                      <div className="space-y-4 pt-2 animate-in fade-in slide-in-from-top-4">
-                        <textarea 
-                          className="w-full p-4 bg-slate-50 rounded-2xl border border-slate-100 text-xs font-medium outline-none focus:ring-2 focus:ring-blue-100 min-h-[150px]"
-                          placeholder="Collez ici des notes, comptes-rendus ou briefings..."
-                          value={noteContent}
-                          onChange={e => setNoteContent(e.target.value)}
-                        />
-                        <button 
-                          onClick={handleAddNote}
-                          className="w-full py-4 bg-blue-600 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest"
-                        >
-                          Enregistrer la note
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                {/* Sources List */}
-                <div className="lg:col-span-2">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {project.documents?.length === 0 ? (
-                      <div className="col-span-full py-32 text-center bg-slate-50/50 rounded-[3rem] border border-dashed border-slate-200">
-                        <div className="text-slate-300 text-4xl mb-4"><i className="fas fa-folder-open"></i></div>
-                        <p className="text-slate-400 font-black text-[10px] uppercase tracking-widest">Aucune source pour le moment</p>
-                      </div>
-                    ) : (
-                      project.documents?.map(doc => (
-                        <div 
-                          key={doc.id} 
-                          onMouseEnter={() => setHoveredDoc(doc.id)}
-                          onMouseLeave={() => setHoveredDoc(null)}
-                          className="bg-white p-5 rounded-[2rem] border border-slate-200 flex items-center justify-between group hover:shadow-xl hover:border-blue-200 transition-all relative"
-                        >
-                          <div className="flex items-center space-x-4 min-w-0 pr-10">
-                            <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shadow-sm ${
-                              doc.name.includes('Note') ? 'bg-amber-50 text-amber-600' : 'bg-slate-50 text-slate-400'
-                            }`}>
-                              <i className={`fas ${
-                                doc.name.includes('Note') ? 'fa-sticky-note' :
-                                doc.name.endsWith('.pdf') ? 'fa-file-pdf' : 'fa-file-alt'
-                              }`}></i>
-                            </div>
-                            <div className="truncate">
-                              <div className="text-xs font-black text-slate-900 truncate">{doc.name}</div>
-                              <div className="text-[9px] font-bold text-slate-400 uppercase mt-1">{new Date(doc.uploadDate).toLocaleDateString('fr-FR')}</div>
-                            </div>
-                          </div>
-
-                          <button 
-                            onClick={(e) => { e.stopPropagation(); handleDeleteDoc(doc.id); }}
-                            className="absolute right-4 opacity-0 group-hover:opacity-100 w-8 h-8 rounded-full bg-red-50 text-red-500 hover:bg-red-500 hover:text-white transition-all flex items-center justify-center"
-                          >
-                            <i className="fas fa-times text-xs"></i>
-                          </button>
-
-                          {hoveredDoc === doc.id && (
-                            <div className="absolute z-[100] top-full mt-2 left-0 w-72 bg-slate-900 p-6 rounded-[2rem] shadow-2xl border border-white/10 animate-in fade-in slide-in-from-top-2 pointer-events-none">
-                              <p className="text-blue-400 text-[9px] font-black uppercase mb-3">Extrait du contenu</p>
-                              <p className="text-slate-400 text-[11px] italic line-clamp-4 leading-relaxed">
-                                {doc.content.substring(0, 300)}...
-                              </p>
-                            </div>
-                          )}
+                    
+                    {hoveredDoc === doc.id && (
+                      <div className="absolute z-[70] bottom-full left-0 mb-4 w-72 bg-slate-900 text-white p-6 rounded-[2rem] text-[11px] shadow-2xl animate-in fade-in slide-in-from-bottom-4 pointer-events-none border border-white/10 backdrop-blur-md">
+                        <div className="font-black border-b border-white/10 pb-3 mb-3 uppercase text-blue-400 flex items-center tracking-widest">
+                          <i className="fas fa-eye mr-2"></i> Aperçu rapide
                         </div>
-                      ))
+                        <div className="line-clamp-6 italic text-slate-300 font-medium leading-relaxed">
+                          {doc.type.includes('text') || doc.name.endsWith('.txt') 
+                            ? (doc.content.substring(0, 400) || "Contenu texte vide.")
+                            : "Aperçu masqué pour les données binaires."}
+                        </div>
+                      </div>
                     )}
                   </div>
-                </div>
+                ))}
               </div>
             </div>
           )}
@@ -518,22 +420,6 @@ const ProjectDetail: React.FC<ProjectDetailProps> = ({ projectId, onBack }) => {
                     <h3 className="font-black text-slate-900 uppercase text-xs tracking-widest">Éditeur de Lettre</h3>
                   </div>
                   <div className="flex space-x-3">
-                    <button 
-                      onClick={async () => {
-                        if (client && project && currentGrant) {
-                          setLoading(true);
-                          const doc = await geminiService.generateDocument(client, project, currentGrant, "Lettre d'Intention");
-                          setGeneratedDoc(doc);
-                          setLoading(false);
-                          alert("Lettre mise à jour avec les informations de la synthèse !");
-                        }
-                      }}
-                      disabled={loading}
-                      className="px-6 py-4 bg-blue-600 text-white border-2 border-blue-400 rounded-2xl text-[10px] font-black uppercase hover:bg-blue-700 transition-all active:scale-95 shadow-lg shadow-blue-200"
-                    >
-                      {loading ? <i className="fas fa-circle-notch fa-spin mr-2"></i> : <i className="fas fa-sync-alt mr-2"></i>}
-                      Régénérer la lettre
-                    </button>
                     <button onClick={handleValidateAndSave} className="px-6 py-4 bg-green-600 text-white rounded-2xl text-[10px] font-black uppercase hover:bg-green-700 transition-all shadow-lg shadow-green-100 active:scale-95">
                       <i className="fas fa-check-double mr-2"></i> Valider Dossier
                     </button>
@@ -568,15 +454,9 @@ const ProjectDetail: React.FC<ProjectDetailProps> = ({ projectId, onBack }) => {
                 <button 
                   onClick={async () => {
                     setLoading(true);
-                    try {
-                      const res = await geminiService.detectFunding(client, project);
-                      setGrants(res);
-                    } catch (e: any) {
-                      console.error("Erreur détection:", e);
-                      alert("Impossible de lancer la détection : " + (e?.message || "Erreur serveur"));
-                    } finally {
-                      setLoading(false);
-                    }
+                    const res = await geminiService.detectFunding(client, project);
+                    setGrants(res);
+                    setLoading(false);
                   }}
                   className="bg-white text-blue-600 px-10 py-5 rounded-[2rem] font-black text-xs uppercase shadow-2xl hover:scale-105 transition-transform active:scale-95"
                 >

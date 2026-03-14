@@ -35,9 +35,5 @@ export const storage = {
   },
   getProjectsByClient: (clientId: string): Project[] => {
     return storage.getProjects().filter(p => p.clientId === clientId);
-  },
-  deleteProject: (id: string) => {
-    const projects = storage.getProjects().filter(p => p.id !== id);
-    localStorage.setItem(PROJECTS_KEY, JSON.stringify(projects));
   }
 };
