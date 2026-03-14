@@ -33,10 +33,17 @@ async function withRetry<T>(fn: () => Promise<T>, retries = 5, initialDelay = 10
       error?.message?.includes('RESOURCE_EXHAUSTED') ||
       error?.status === 429;
       
-    if (isQuotaError && retries > 0) {
-      console.warn(`Flux saturé. Nouvelle tentative dans ${initialDelay/1000}s... (${retries} essais restants)`);
-      await delay(initialDelay);
-      return withRetry(fn, retries - 1, initialDelay + 10000); // Incremental backoff + 10s each time
+    if (isQuotaError) {
+      // If daily quota is hit, don't even try to retry
+      if (error?.message?.includes('PerDay')) {
+        throw new Error("quota_daily_exceeded");
+      }
+      
+      if (retries > 0) {
+        console.warn(`Flux saturé. Nouvelle tentative dans ${initialDelay/1000}s... (${retries} essais restants)`);
+        await delay(initialDelay);
+        return withRetry(fn, retries - 1, initialDelay + 10000);
+      }
     }
     throw error;
   }

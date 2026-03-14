@@ -67,7 +67,7 @@ const ProjectDetail: React.FC<ProjectDetailProps> = ({ projectId, onBack }) => {
     }
     
     if (error?.message?.includes('quota') || error?.status === 429) {
-      if (error?.message?.includes('PerDay')) {
+      if (error?.message?.includes('PerDay') || error?.message?.includes('daily')) {
         alert("Quota QUOTIDIEN atteint. La limite gratuite par jour a été consommée. Veuillez patienter jusqu'à demain ou utiliser une clé payante.");
       } else {
         alert("quota atteint attendre 1 min");
