@@ -49,11 +49,18 @@ const ProjectDetail: React.FC<ProjectDetailProps> = ({ projectId, onBack }) => {
     setLoading(false);
 
     const errorMsg = error?.message || "";
-    if (errorMsg === "apikey_missing" || errorMsg.includes("API Key must be set")) {
-      const newKey = prompt("Clé API Gemini manquante.\n\nVous pouvez en obtenir une gratuitement sur :\nhttps://aistudio.google.com/app/apikey\n\nVeuillez saisir votre clé API :");
+    const isApiKeyError = 
+      errorMsg === "apikey_missing" || 
+      errorMsg.includes("API Key must be set") ||
+      errorMsg.includes("leaked") ||
+      error?.status === 403;
+
+    if (isApiKeyError) {
+      const reason = errorMsg.includes("leaked") ? "Votre clé API a été bloquée (leaked)." : "Clé API Gemini manquante ou invalide.";
+      const newKey = prompt(`${reason}\n\nVous pouvez en obtenir une sur :\nhttps://aistudio.google.com/app/apikey\n\nVeuillez saisir une nouvelle clé API :`);
       if (newKey && newKey.trim()) {
         localStorage.setItem('GEMINI_API_KEY', newKey.trim());
-        alert("Clé API enregistrée localement ! Relancez l'opération.");
+        alert("Nouvelle clé enregistrée ! Relancez l'opération.");
         window.location.reload();
       }
       return;
