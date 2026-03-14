@@ -16,8 +16,8 @@ const getAI = () => {
       throw new Error("apikey_missing");
     }
     
-    // Using the newer SDK initialization
-    return new GoogleGenAI({ apiKey: key });
+    // The correct way to initialize the GoogleGenAI instance with the API key
+    return new GoogleGenAI(key);
 };
 
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
@@ -36,13 +36,21 @@ async function withRetry<T>(fn: () => Promise<T>, retries = 3, initialDelay = 20
 }
 
 export const geminiService = {
-  async analyzeDocument(documents: DocumentFile[]): Promise<Partial<Project>> {
+  // Updated to handle both raw text (from ClientForm) and DocumentFile array (from ProjectDetail)
+  async analyzeDocument(input: DocumentFile[] | string): Promise<Partial<Project>> {
     const ai = getAI();
     
-    const corpus = documents
-      .map(doc => `--- DOCUMENT: ${doc.name} ---\n${doc.content}`)
-      .join("\n\n")
-      .substring(0, 30000);
+    let corpus = "";
+    if (typeof input === 'string') {
+      corpus = input;
+    } else {
+      corpus = input
+        .map(doc => `--- DOCUMENT: ${doc.name} ---\n${doc.content}`)
+        .join("\n\n");
+    }
+    
+    // Limit corpus size to stay within manageable context for Flash
+    corpus = corpus.substring(0, 30000);
 
     const prompt = `Tu es un expert en ingénierie de financement public. Analyse ce corpus de documents et extrais TOUTES les informations possibles pour compléter le dossier de subvention.
     Format JSON uniquement. Soyez précis.
@@ -51,7 +59,6 @@ export const geminiService = {
     ${corpus}`;
 
     return withRetry(async () => {
-      // Corrected model name and call structure for @google/genai
       const model = ai.getGenerativeModel({ model: "gemini-1.5-flash" });
       const response = await model.generateContent({
         contents: [{ role: 'user', parts: [{ text: prompt }] }],
