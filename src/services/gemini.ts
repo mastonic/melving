@@ -49,8 +49,8 @@ async function withRetry<T>(fn: () => Promise<T>, retries = 5, initialDelay = 10
   }
 }
 
-// Using the most widely available stable redirect
-const MODEL_NAME = "gemini-1.5-flash-latest";
+// Using the newest frontier-class model for March 2026
+const MODEL_NAME = "gemini-3.1-flash";
 
 const extractJSON = (text: string) => {
   try {
