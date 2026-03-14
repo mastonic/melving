@@ -50,7 +50,7 @@ async function withRetry<T>(fn: () => Promise<T>, retries = 5, initialDelay = 10
 }
 
 // Switching to the most powerful and recent model
-const MODEL_NAME = "gemini-2.0-flash";
+const MODEL_NAME = "gemini-1.5-flash";
 
 const extractJSON = (text: string) => {
   try {
