@@ -49,8 +49,8 @@ async function withRetry<T>(fn: () => Promise<T>, retries = 5, initialDelay = 10
   }
 }
 
-// Using the newest frontier-class model for March 2026
-const MODEL_NAME = "gemini-3.1-flash";
+// Using the most resilient frontier model (1.5 Pro) for analytical precision
+const MODEL_NAME = "gemini-1.5-pro";
 
 const extractJSON = (text: string) => {
   try {
