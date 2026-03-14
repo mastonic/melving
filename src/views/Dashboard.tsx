@@ -184,18 +184,69 @@ const Dashboard: React.FC<DashboardProps> = ({ onSelectProject, onCreateNew }) =
 
       {/* Placeholder Modal for Tools */}
       {showToolModal && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">
-          <div className="bg-white rounded-3xl shadow-2xl p-8 max-w-md w-full animate-in zoom-in-95">
-            <h3 className="text-xl font-black text-slate-900 mb-2">Outil: {showToolModal}</h3>
-            <p className="text-slate-500 text-sm mb-6">
-              Cette fonctionnalité est en cours de déploiement. Elle vous permettra d'automatiser vos analyses de {showToolModal.toLowerCase()} via l'IA SUB'ECOIMPACT.
-            </p>
-            <button 
-              onClick={() => setShowToolModal(null)}
-              className="w-full bg-emerald-600 text-white py-3 rounded-xl font-bold"
-            >
-              Compris
-            </button>
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 overflow-y-auto">
+          <div className="bg-white rounded-[3rem] shadow-2xl p-10 max-w-2xl w-full animate-in zoom-in-95 my-8">
+            <div className="flex justify-between items-center mb-8">
+                <h3 className="text-2xl font-black text-slate-900 uppercase tracking-tighter">Outil: {showToolModal}</h3>
+                <button onClick={() => setShowToolModal(null)} className="w-10 h-10 rounded-full bg-slate-50 flex items-center justify-center text-slate-400 hover:text-red-500 transition-colors">
+                    <i className="fas fa-times"></i>
+                </button>
+            </div>
+            
+            {showToolModal === 'Veille' && (
+                <div className="space-y-6 text-left">
+                    <p className="text-slate-500 font-medium text-sm">Scanner les programmes de financement actifs en temps réel.</p>
+                    <div className="flex gap-2">
+                        <input type="text" placeholder="Ex: Transition écologique Martinique..." className="flex-grow px-6 py-4 bg-slate-50 border border-slate-200 rounded-2xl text-sm outline-none focus:border-emerald-500" />
+                        <button className="bg-emerald-600 text-white px-6 py-4 rounded-2xl font-bold text-sm">Scanner</button>
+                    </div>
+                    <div className="bg-emerald-50 p-6 rounded-3xl border border-emerald-100 flex items-start gap-4">
+                        <i className="fas fa-satellite-dish text-emerald-500 mt-1"></i>
+                        <div>
+                            <div className="text-xs font-black text-emerald-900 uppercase tracking-widest mb-1">Dernière Détection</div>
+                            <p className="text-emerald-700 text-sm">3 nouvelles aides ADEME disponibles pour les TPE en Guadeloupe.</p>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {showToolModal === 'Modèles' && (
+                <div className="space-y-4 text-left">
+                    <p className="text-slate-500 font-medium text-sm">Gérez et téléchargez vos modèles de documents officiels.</p>
+                    <div className="grid grid-cols-1 gap-3">
+                        {['Note d\'Intention', 'Dossier Technique', 'Plan de Financement', 'Tableau de Bord'].map(m => (
+                            <div key={m} className="p-4 bg-slate-50 rounded-2xl flex items-center justify-between group hover:bg-emerald-50 transition-colors cursor-pointer">
+                                <span className="font-bold text-slate-700">{m}</span>
+                                <i className="fas fa-download text-slate-300 group-hover:text-emerald-500"></i>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
+
+            {showToolModal === 'Budget' && (
+                <div className="space-y-6 text-left">
+                    <p className="text-slate-500 font-medium text-sm">Calculateur rapide de subvention selon les taux en vigueur.</p>
+                    <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                            <label className="text-[10px] font-black uppercase text-slate-400">Coût Total HT</label>
+                            <input type="number" placeholder="50000" className="w-full px-6 py-4 bg-slate-50 border border-slate-200 rounded-2xl font-bold" />
+                        </div>
+                        <div className="space-y-2">
+                            <label className="text-[10px] font-black uppercase text-slate-400">Taux de Subvention (%)</label>
+                            <input type="number" placeholder="50" className="w-full px-6 py-4 bg-slate-50 border border-slate-200 rounded-2xl font-bold" />
+                        </div>
+                    </div>
+                    <div className="p-6 bg-slate-900 rounded-[2rem] text-center">
+                        <div className="text-[10px] font-black text-emerald-400 uppercase tracking-widest mb-1">Aide Prévisionnelle</div>
+                        <div className="text-3xl font-black text-white">25 000,00 €</div>
+                    </div>
+                </div>
+            )}
+
+            <div className="mt-8 pt-8 border-t border-slate-100 italic text-[10px] text-slate-400 text-center uppercase tracking-widest font-black">
+                Propulsé par SUB'ÉCO IMPACT IA
+            </div>
           </div>
         </div>
       )}
