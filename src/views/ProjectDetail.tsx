@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { storage } from '../services/storage';
-import { geminiService } from '../services/gemini';
+import { geminiService } from '../services/ai';
 import { Project, Client, Grant, ProjectStatus, DocumentFile } from '../types';
 import { generateUUID } from '../utils/uuid';
 
@@ -56,8 +56,8 @@ const ProjectDetail: React.FC<ProjectDetailProps> = ({ projectId, onBack }) => {
       error?.status === 403;
 
     if (isApiKeyError) {
-      const reason = errorMsg.includes("leaked") ? "Votre clé API a été bloquée (leaked)." : "Clé API Gemini manquante ou invalide.";
-      const newKey = prompt(`${reason}\n\nVous pouvez en obtenir une sur :\nhttps://aistudio.google.com/app/apikey\n\nVeuillez saisir une nouvelle clé API :`);
+      const reason = errorMsg.includes("leaked") ? "Votre clé API a été bloquée (leaked)." : "Clé API (Gemini ou OpenAI) manquante ou invalide.";
+      const newKey = prompt(`${reason}\n\nVous pouvez utiliser :\n1. Une clé Gemini (gratuite) : https://aistudio.google.com/app/apikey\n2. Une clé OpenAI (sk-...) : https://platform.openai.com/api-keys\n\nVeuillez saisir votre nouvelle clé API :`);
       if (newKey && newKey.trim()) {
         localStorage.setItem('GEMINI_API_KEY', newKey.trim());
         alert("Nouvelle clé enregistrée ! Relancez l'opération.");
