@@ -32,8 +32,8 @@ const ClientForm: React.FC<ClientFormProps> = ({ onSuccess }) => {
         context: extracted.context || prev.context
       }));
       setShowMagicFill(false);
-    } catch (e) {
-      console.error(e);
+    } catch (e: any) {
+      handleAIError(e);
     } finally {
       setLoadingAI(false);
     }
@@ -65,6 +65,35 @@ const ClientForm: React.FC<ClientFormProps> = ({ onSuccess }) => {
     storage.saveClient(client);
     storage.saveProject(project);
     onSuccess(projectId);
+  };
+
+  const handleAIError = (error: any) => {
+    console.error("Erreur IA détaillée :", error);
+    setLoadingAI(false);
+
+    const errorMsg = error?.message || "";
+    const isApiKeyError = 
+      errorMsg === "apikey_missing" || 
+      errorMsg.includes("API Key must be set") ||
+      errorMsg.includes("leaked") ||
+      error?.status === 403;
+
+    if (isApiKeyError) {
+      const reason = errorMsg.includes("leaked") ? "Votre clé API a été bloquée (leaked)." : "Clé API Gemini manquante ou invalide.";
+      const newKey = prompt(`${reason}\n\nVous pouvez en obtenir une sur :\nhttps://aistudio.google.com/app/apikey\n\nVeuillez saisir une nouvelle clé API :`);
+      if (newKey && newKey.trim()) {
+        localStorage.setItem('GEMINI_API_KEY', newKey.trim());
+        alert("Nouvelle clé enregistrée ! Relancez l'opération.");
+        window.location.reload();
+      }
+      return;
+    }
+    
+    if (error?.message?.includes('quota') || error?.status === 429) {
+      alert("quota atteint attendre 1 min");
+    } else {
+      alert("Une erreur est survenue avec l'IA : " + (error?.message || "Erreur inconnue"));
+    }
   };
 
   return (
