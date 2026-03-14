@@ -49,8 +49,8 @@ async function withRetry<T>(fn: () => Promise<T>, retries = 5, initialDelay = 10
   }
 }
 
-// Using the most widely available minimalist model (8B) to maximize regional compatibility in EEA
-const MODEL_NAME = "gemini-1.5-flash-8b";
+// Using the March 2026 default for EEA territories
+const MODEL_NAME = "gemini-3.1-flash-lite";
 
 const extractJSON = (text: string) => {
   try {
