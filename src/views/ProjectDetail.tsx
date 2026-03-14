@@ -209,9 +209,9 @@ const ProjectDetail: React.FC<ProjectDetailProps> = ({ projectId, onBack }) => {
         <div className="fixed inset-0 z-[200] bg-slate-900/95 backdrop-blur-2xl flex items-center justify-center p-6">
           <div className="bg-white rounded-[4rem] p-16 max-w-xl w-full text-center shadow-2xl relative overflow-hidden">
             <div className="w-32 h-32 mx-auto mb-10 relative">
-              <div className="absolute inset-0 border-8 border-blue-50 rounded-full"></div>
-              <div className="absolute inset-0 border-8 border-blue-600 rounded-full border-t-transparent animate-spin"></div>
-              <i className="fas fa-brain text-blue-600 text-5xl absolute inset-0 flex items-center justify-center animate-pulse"></i>
+              <div className="absolute inset-0 border-8 border-emerald-50 rounded-full"></div>
+              <div className="absolute inset-0 border-8 border-emerald-600 rounded-full border-t-transparent animate-spin"></div>
+              <i className="fas fa-brain text-emerald-600 text-5xl absolute inset-0 flex items-center justify-center animate-pulse"></i>
             </div>
             <h3 className="text-3xl font-black text-slate-900 mb-6">Analyse Cognitive</h3>
             <p className="text-slate-500 font-bold leading-relaxed mb-8">Extraction et structuration intelligente...</p>
@@ -227,7 +227,7 @@ const ProjectDetail: React.FC<ProjectDetailProps> = ({ projectId, onBack }) => {
           </button>
           <div>
             <h1 className="text-3xl font-black text-slate-900 tracking-tight">{project.title}</h1>
-            <p className="text-blue-600 font-bold text-[11px] uppercase tracking-widest mt-1">{client.name} • {client.region}</p>
+            <p className="text-emerald-600 font-bold text-[11px] uppercase tracking-widest mt-1">{client.name} • {client.region}</p>
           </div>
         </div>
         <div className="flex space-x-3">
@@ -236,7 +236,7 @@ const ProjectDetail: React.FC<ProjectDetailProps> = ({ projectId, onBack }) => {
               <i className="fas fa-check mr-2"></i> Enregistrer
             </button>
           ) : (
-            <button onClick={() => setIsEditing(true)} className="bg-slate-900 text-white px-6 py-3 rounded-xl text-xs font-bold shadow-lg hover:bg-blue-600 active:scale-95">
+            <button onClick={() => setIsEditing(true)} className="bg-slate-900 text-white px-6 py-3 rounded-xl text-xs font-bold shadow-lg hover:bg-emerald-600 active:scale-95">
               <i className="fas fa-pen mr-2"></i> Éditer synthèse
             </button>
           )}
@@ -291,7 +291,7 @@ const ProjectDetail: React.FC<ProjectDetailProps> = ({ projectId, onBack }) => {
                 <button 
                   onClick={handleRegenerateFromDocs}
                   disabled={isAnalyzing || !project.documents?.length}
-                  className={`bg-blue-600 text-white px-10 py-5 rounded-[2rem] text-[10px] font-black uppercase tracking-[0.2em] hover:bg-blue-700 transition-all flex items-center active:scale-95 shadow-xl shadow-blue-100`}
+                  className={`bg-emerald-600 text-white px-10 py-5 rounded-[2rem] text-[10px] font-black uppercase tracking-[0.2em] hover:bg-emerald-700 transition-all flex items-center active:scale-95 shadow-xl shadow-emerald-100`}
                 >
                   <i className="fas fa-magic mr-4"></i> Lancer l'analyse croisée
                 </button>
@@ -302,8 +302,8 @@ const ProjectDetail: React.FC<ProjectDetailProps> = ({ projectId, onBack }) => {
                   <div className="bg-white p-8 rounded-[2.5rem] border border-slate-200 shadow-sm space-y-6">
                     <div className="relative group">
                       <input type="file" multiple onChange={handleFileUpload} className="absolute inset-0 opacity-0 cursor-pointer z-10" />
-                      <div className="p-6 border-2 border-dashed border-slate-100 rounded-3xl group-hover:bg-blue-50 transition-all text-center">
-                        <i className="fas fa-file-upload text-blue-600 mb-3 block text-xl"></i>
+                      <div className="p-6 border-2 border-dashed border-slate-100 rounded-3xl group-hover:bg-emerald-50 transition-all text-center">
+                        <i className="fas fa-file-upload text-emerald-600 mb-3 block text-xl"></i>
                         <span className="text-[10px] font-black uppercase text-slate-600">Importer Fichiers</span>
                       </div>
                     </div>
@@ -314,7 +314,7 @@ const ProjectDetail: React.FC<ProjectDetailProps> = ({ projectId, onBack }) => {
                     {showNoteInput && (
                       <div className="space-y-4 pt-2">
                         <textarea className="w-full p-4 bg-slate-50 rounded-2xl border border-slate-100 text-xs outline-none min-h-[150px]" value={noteContent} onChange={e => setNoteContent(e.target.value)} placeholder="Contenu de la note..." />
-                        <button onClick={handleAddNote} className="w-full py-4 bg-blue-600 text-white rounded-2xl text-[10px] font-black uppercase">Enregistrer</button>
+                        <button onClick={handleAddNote} className="w-full py-4 bg-emerald-600 text-white rounded-2xl text-[10px] font-black uppercase">Enregistrer</button>
                       </div>
                     )}
                   </div>
@@ -343,10 +343,10 @@ const ProjectDetail: React.FC<ProjectDetailProps> = ({ projectId, onBack }) => {
 
           {activeTab === 'funding' && (
             <div className="space-y-8 animate-in slide-in-from-bottom-2 duration-500">
-              <div className="bg-blue-600 p-12 rounded-[3rem] text-white flex flex-col md:flex-row justify-between items-center gap-8 border border-blue-500">
+              <div className="bg-emerald-600 p-12 rounded-[3rem] text-white flex flex-col md:flex-row justify-between items-center gap-8 border border-emerald-500">
                 <div className="text-left">
                   <h3 className="text-3xl font-black tracking-tight"><i className="fas fa-robot mr-4"></i> Veille IA</h3>
-                  <p className="text-blue-100 text-xs font-bold uppercase mt-2">Financements territoriaux identifiés</p>
+                  <p className="text-emerald-100 text-xs font-bold uppercase mt-2">Financements territoriaux identifiés</p>
                 </div>
                 <button 
                   onClick={async () => {
@@ -360,7 +360,7 @@ const ProjectDetail: React.FC<ProjectDetailProps> = ({ projectId, onBack }) => {
                       setLoading(false);
                     }
                   }}
-                  className="bg-white text-blue-600 px-10 py-5 rounded-[2rem] font-black text-xs uppercase shadow-2xl hover:scale-105 active:scale-95 transition-all"
+                  className="bg-white text-emerald-600 px-10 py-5 rounded-[2rem] font-black text-xs uppercase shadow-2xl hover:scale-105 active:scale-95 transition-all"
                 >
                   {loading ? <i className="fas fa-circle-notch fa-spin mr-3"></i> : <i className="fas fa-sync-alt mr-3"></i>}
                   Lancer la détection
@@ -387,7 +387,7 @@ const ProjectDetail: React.FC<ProjectDetailProps> = ({ projectId, onBack }) => {
                           setLoading(false);
                         }
                       }}
-                      className="bg-slate-900 text-white px-10 py-5 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-blue-600 active:scale-95 transition-all"
+                      className="bg-slate-900 text-white px-10 py-5 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-emerald-600 active:scale-95 transition-all"
                     >
                       Sélectionner
                     </button>
@@ -402,7 +402,7 @@ const ProjectDetail: React.FC<ProjectDetailProps> = ({ projectId, onBack }) => {
               <div className="p-12">
                 <div className="flex flex-col md:flex-row justify-between md:items-center mb-10 pb-8 border-b border-slate-100 gap-6">
                   <div className="flex items-center">
-                    <div className="w-12 h-12 bg-blue-600 rounded-2xl flex items-center justify-center text-white mr-4 shadow-xl"><i className="fas fa-file-signature text-lg"></i></div>
+                    <div className="w-12 h-12 bg-emerald-600 rounded-2xl flex items-center justify-center text-white mr-4 shadow-xl"><i className="fas fa-file-signature text-lg"></i></div>
                     <h3 className="font-black text-slate-900 uppercase text-xs tracking-widest">Éditeur</h3>
                   </div>
                   <div className="flex space-x-3">
@@ -422,7 +422,7 @@ const ProjectDetail: React.FC<ProjectDetailProps> = ({ projectId, onBack }) => {
                         }
                       }}
                       disabled={loading}
-                      className="px-6 py-4 bg-blue-600 text-white border-2 border-blue-400 rounded-2xl text-[10px] font-black uppercase hover:bg-blue-700 transition-all active:scale-95"
+                      className="px-6 py-4 bg-emerald-600 text-white border-2 border-emerald-400 rounded-2xl text-[10px] font-black uppercase hover:bg-emerald-700 transition-all active:scale-95"
                     >
                       <i className="fas fa-sync-alt mr-2"></i> Régénérer
                     </button>
@@ -469,7 +469,7 @@ const ProjectDetail: React.FC<ProjectDetailProps> = ({ projectId, onBack }) => {
         {/* SIDEBAR */}
         <div className="lg:col-span-4 space-y-6">
           <div className="bg-slate-900 rounded-[3rem] p-10 text-white border border-slate-800 text-left">
-            <h3 className="text-[10px] font-black uppercase tracking-widest text-blue-400 mb-10">État du Dossier</h3>
+            <h3 className="text-[10px] font-black uppercase tracking-widest text-emerald-400 mb-10">État du Dossier</h3>
             <div className="space-y-8">
               <SidebarStatus label="Qualification" done={!!project.title && !!project.target} />
               <SidebarStatus label="Sources" done={(project.documents?.length || 0) > 0} />
@@ -499,18 +499,18 @@ const SynthesisField: React.FC<{ label: string, value?: string, isEditing: boole
 );
 
 const TabBtn: React.FC<{ active: boolean, onClick: () => void, label: string, icon: string }> = ({ active, onClick, label, icon }) => (
-  <button onClick={onClick} className={`flex items-center justify-center px-10 py-5 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all ${active ? 'bg-white text-blue-600 shadow-xl border border-slate-100' : 'text-slate-500 hover:text-slate-900'}`}>
-    <i className={`fas ${icon} mr-4 ${active ? 'text-blue-600' : 'text-slate-400'}`}></i> {label}
+  <button onClick={onClick} className={`flex items-center justify-center px-10 py-5 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all ${active ? 'bg-white text-emerald-600 shadow-xl border border-slate-100' : 'text-slate-500 hover:text-slate-900'}`}>
+    <i className={`fas ${icon} mr-4 ${active ? 'text-emerald-600' : 'text-slate-400'}`}></i> {label}
   </button>
 );
 
 const SidebarStatus: React.FC<{ label: string, done: boolean }> = ({ label, done }) => (
   <div className="flex items-center justify-between group">
     <div className="flex items-center space-x-5">
-      <div className={`w-3 h-3 rounded-full ${done ? 'bg-blue-500 shadow-[0_0_10px_rgba(59,130,246,0.5)]' : 'bg-slate-800'}`}></div>
+      <div className={`w-3 h-3 rounded-full ${done ? 'bg-emerald-500 shadow-[0_0_10px_rgba(59,130,246,0.5)]' : 'bg-slate-800'}`}></div>
       <span className={`text-xs font-black ${done ? 'text-white' : 'text-slate-600'}`}>{label}</span>
     </div>
-    {done && <i className="fas fa-check-circle text-blue-500"></i>}
+    {done && <i className="fas fa-check-circle text-emerald-500"></i>}
   </div>
 );
 

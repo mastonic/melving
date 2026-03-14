@@ -73,28 +73,28 @@ const ClientForm: React.FC<ClientFormProps> = ({ onSuccess }) => {
         <div className="bg-slate-900 p-8 text-white flex justify-between items-center">
           <div className="text-left">
             <h2 className="text-2xl font-black tracking-tight">Initialisation du Dossier</h2>
-            <p className="text-blue-400 text-xs font-black uppercase tracking-widest mt-1">Étape 1 : Profil & Projet</p>
+            <p className="text-emerald-400 text-xs font-black uppercase tracking-widest mt-1">Étape 1 : Profil & Projet</p>
           </div>
           <button 
             type="button"
             onClick={() => setShowMagicFill(!showMagicFill)}
-            className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all shadow-lg"
+            className="bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all shadow-lg"
           >
             <i className="fas fa-magic mr-2"></i> Remplissage IA
           </button>
         </div>
 
         {showMagicFill && (
-          <div className="p-8 bg-blue-50 border-b border-blue-100 animate-in slide-in-from-top duration-300">
+          <div className="p-8 bg-emerald-50 border-b border-emerald-100 animate-in slide-in-from-top duration-300">
             <h4 className="text-sm font-black text-blue-900 mb-3 uppercase tracking-tight">Analyse de brouillon</h4>
             <textarea 
-              className="w-full p-5 rounded-2xl border border-blue-200 focus:ring-2 focus:ring-blue-500 outline-none text-sm min-h-[120px] bg-white"
+              className="w-full p-5 rounded-2xl border border-emerald-200 focus:ring-2 focus:ring-emerald-500 outline-none text-sm min-h-[120px] bg-white"
               placeholder="Collez ici votre texte pour extraire le titre et le contexte..."
               value={roughText}
               onChange={e => setRoughText(e.target.value)}
             />
             <div className="mt-4 flex justify-end">
-              <button onClick={handleMagicFill} disabled={loadingAI} className="bg-blue-600 text-white px-6 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest disabled:opacity-50">
+              <button onClick={handleMagicFill} disabled={loadingAI} className="bg-emerald-600 text-white px-6 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest disabled:opacity-50">
                 {loadingAI ? 'Analyse...' : 'Extraire les Données'}
               </button>
             </div>
@@ -112,7 +112,7 @@ const ClientForm: React.FC<ClientFormProps> = ({ onSuccess }) => {
             <div className="space-y-2">
               <label className="text-[11px] font-black text-slate-900 uppercase tracking-widest block">Région</label>
               <select 
-                className="w-full px-5 py-3 rounded-2xl border border-slate-200 text-sm font-bold bg-slate-50 focus:ring-2 focus:ring-blue-500 outline-none text-slate-900"
+                className="w-full px-5 py-3 rounded-2xl border border-slate-200 text-sm font-bold bg-slate-50 focus:ring-2 focus:ring-emerald-500 outline-none text-slate-900"
                 value={formData.region}
                 onChange={e => setFormData({...formData, region: e.target.value})}
               >
@@ -135,7 +135,7 @@ const ClientForm: React.FC<ClientFormProps> = ({ onSuccess }) => {
             <div className="md:col-span-2 space-y-2">
               <label className="text-[11px] font-black text-slate-900 uppercase tracking-widest block">Contexte opérationnel</label>
               <textarea 
-                className="w-full px-5 py-4 rounded-2xl border border-slate-200 text-sm min-h-[120px] focus:ring-2 focus:ring-blue-500 bg-slate-50/50 text-slate-900"
+                className="w-full px-5 py-4 rounded-2xl border border-slate-200 text-sm min-h-[120px] focus:ring-2 focus:ring-emerald-500 bg-slate-50/50 text-slate-900"
                 placeholder="Expliquez brièvement le besoin..."
                 value={formData.context}
                 onChange={e => setFormData({...formData, context: e.target.value})}
@@ -143,7 +143,7 @@ const ClientForm: React.FC<ClientFormProps> = ({ onSuccess }) => {
             </div>
           </section>
 
-          <button type="submit" className="w-full bg-slate-900 text-white py-5 rounded-3xl font-black text-xl hover:bg-blue-600 transition-all flex items-center justify-center group shadow-xl shadow-slate-200">
+          <button type="submit" className="w-full bg-slate-900 text-white py-5 rounded-3xl font-black text-xl hover:bg-emerald-600 transition-all flex items-center justify-center group shadow-xl shadow-slate-200">
             Créer le Dossier <i className="fas fa-chevron-right ml-4 group-hover:translate-x-2 transition-transform"></i>
           </button>
         </form>
@@ -158,7 +158,7 @@ const FormField: React.FC<{ label: string, value: string, onChange: (v: string) 
     <input 
       type={type}
       required={required}
-      className="w-full px-5 py-3 rounded-2xl border border-slate-200 text-sm font-bold bg-slate-50 focus:ring-2 focus:ring-blue-500 outline-none transition-all text-slate-900"
+      className="w-full px-5 py-3 rounded-2xl border border-slate-200 text-sm font-bold bg-slate-50 focus:ring-2 focus:ring-emerald-500 outline-none transition-all text-slate-900"
       placeholder={placeholder}
       value={value}
       onChange={e => onChange(e.target.value)}

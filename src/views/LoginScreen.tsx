@@ -37,7 +37,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess, onCancel }) =
     <div className="min-h-[calc(100vh-128px)] flex items-center justify-center bg-slate-50 p-4">
       <div className="bg-white p-10 rounded-3xl shadow-2xl border border-slate-100 max-w-sm w-full animate-in zoom-in-95 duration-300">
         <div className="text-center mb-8">
-          <div className="w-16 h-16 bg-blue-600 rounded-2xl flex items-center justify-center text-white text-2xl mx-auto mb-4 shadow-lg shadow-blue-100">
+          <div className="w-16 h-16 bg-emerald-600 rounded-2xl flex items-center justify-center text-white text-2xl mx-auto mb-4 shadow-lg shadow-emerald-100">
             <i className="fas fa-lock"></i>
           </div>
           <h2 className="text-2xl font-bold text-slate-900">Accès Outils</h2>
@@ -51,7 +51,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess, onCancel }) =
               key={i} 
               className={`w-12 h-16 rounded-xl border-2 flex items-center justify-center text-2xl font-bold transition-all ${
                 error ? 'border-red-500 bg-red-50 animate-bounce' : 
-                pin.length > i ? 'border-blue-600 bg-blue-50 text-blue-600' : 'border-slate-200'
+                pin.length > i ? 'border-emerald-600 bg-emerald-50 text-emerald-600' : 'border-slate-200'
               }`}
             >
               {pin.length > i ? '•' : ''}

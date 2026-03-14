@@ -41,18 +41,18 @@ const Dashboard: React.FC<DashboardProps> = ({ onSelectProject, onCreateNew }) =
         </div>
         <div className="flex items-center space-x-3">
           <div className="relative group hidden sm:block">
-            <i className="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm group-focus-within:text-blue-500 transition-colors"></i>
+            <i className="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm group-focus-within:text-emerald-500 transition-colors"></i>
             <input 
               type="text" 
               placeholder="Rechercher..."
-              className="pl-10 pr-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none w-64 shadow-sm transition-all"
+              className="pl-10 pr-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none w-64 shadow-sm transition-all"
               value={filter}
               onChange={(e) => setFilter(e.target.value)}
             />
           </div>
           <button 
             onClick={onCreateNew}
-            className="bg-blue-600 text-white px-6 py-2.5 rounded-xl text-sm font-bold hover:bg-blue-700 shadow-lg shadow-blue-100 transition-all flex items-center shrink-0"
+            className="bg-emerald-600 text-white px-6 py-2.5 rounded-xl text-sm font-bold hover:bg-emerald-700 shadow-lg shadow-emerald-100 transition-all flex items-center shrink-0"
           >
             <i className="fas fa-plus mr-2"></i> Nouveau Dossier
           </button>
@@ -72,7 +72,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onSelectProject, onCreateNew }) =
           <div className="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden">
             <div className="px-8 py-6 border-b border-slate-100 bg-slate-50/30 flex items-center justify-between">
               <h3 className="font-extrabold text-slate-900 tracking-tight flex items-center">
-                <i className="fas fa-list-ul mr-3 text-blue-600"></i> Dossiers en cours
+                <i className="fas fa-list-ul mr-3 text-emerald-600"></i> Dossiers en cours
               </h3>
               <span className="text-[10px] font-black uppercase tracking-widest text-slate-400 bg-slate-100 px-2 py-1 rounded">
                 {filteredProjects.length} Projets
@@ -94,7 +94,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onSelectProject, onCreateNew }) =
                     {filteredProjects.map(project => (
                       <tr key={project.id} className="hover:bg-slate-50/80 transition-colors group">
                         <td className="px-8 py-6">
-                          <div className="font-bold text-slate-900 mb-1 group-hover:text-blue-600 transition-colors">{project.title}</div>
+                          <div className="font-bold text-slate-900 mb-1 group-hover:text-emerald-600 transition-colors">{project.title}</div>
                           <div className="text-xs text-slate-500 flex items-center font-medium">
                             <span className="w-2 h-2 rounded-full bg-slate-300 mr-2"></span> {getClientName(project.clientId)}
                           </div>
@@ -109,7 +109,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onSelectProject, onCreateNew }) =
                         <td className="px-8 py-6 text-right">
                           <button 
                             onClick={() => onSelectProject(project.id)}
-                            className="bg-white border border-slate-200 text-slate-700 px-5 py-2 rounded-xl text-xs font-bold hover:bg-blue-600 hover:text-white hover:border-blue-600 transition-all shadow-sm"
+                            className="bg-white border border-slate-200 text-slate-700 px-5 py-2 rounded-xl text-xs font-bold hover:bg-emerald-600 hover:text-white hover:border-emerald-600 transition-all shadow-sm"
                           >
                             Détails <i className="fas fa-arrow-right ml-2 opacity-30"></i>
                           </button>
@@ -126,7 +126,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onSelectProject, onCreateNew }) =
                  </div>
                  <h4 className="text-slate-900 font-bold mb-1">Aucun dossier actif</h4>
                  <p className="text-slate-500 text-sm mb-6">Commencez par créer votre premier dossier client.</p>
-                 <button onClick={onCreateNew} className="text-blue-600 text-sm font-black hover:underline uppercase tracking-widest">
+                 <button onClick={onCreateNew} className="text-emerald-600 text-sm font-black hover:underline uppercase tracking-widest">
                    Créer maintenant
                  </button>
               </div>
@@ -139,7 +139,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onSelectProject, onCreateNew }) =
           <div className="bg-slate-900 rounded-3xl p-6 text-white shadow-xl shadow-slate-200 relative overflow-hidden group">
             <div className="relative z-10">
               <h3 className="font-bold mb-4 flex items-center text-sm uppercase tracking-widest">
-                <i className="fas fa-screwdriver-wrench mr-3 text-blue-400"></i> Accès Outils IA
+                <i className="fas fa-screwdriver-wrench mr-3 text-emerald-400"></i> Accès Outils IA
               </h3>
               <div className="space-y-2">
                 <QuickToolButton 
@@ -159,9 +159,9 @@ const Dashboard: React.FC<DashboardProps> = ({ onSelectProject, onCreateNew }) =
                 />
                 <button 
                   onClick={onCreateNew}
-                  className="w-full mt-4 flex items-center p-3 rounded-xl bg-blue-600/20 border border-blue-500/30 hover:bg-blue-600 transition-all text-left group"
+                  className="w-full mt-4 flex items-center p-3 rounded-xl bg-emerald-600/20 border border-emerald-500/30 hover:bg-emerald-600 transition-all text-left group"
                 >
-                  <i className="fas fa-magic w-8 text-blue-400 text-sm group-hover:text-white"></i>
+                  <i className="fas fa-magic w-8 text-emerald-400 text-sm group-hover:text-white"></i>
                   <span className="text-xs font-bold text-blue-300 group-hover:text-white">Dossier via Prompt</span>
                 </button>
               </div>
@@ -171,11 +171,11 @@ const Dashboard: React.FC<DashboardProps> = ({ onSelectProject, onCreateNew }) =
             </div>
           </div>
 
-          <div className="bg-blue-50 rounded-3xl p-6 border border-blue-100">
+          <div className="bg-emerald-50 rounded-3xl p-6 border border-emerald-100">
             <h4 className="text-blue-900 font-bold text-sm mb-3 flex items-center">
-              <i className="fas fa-lightbulb mr-2 text-blue-500"></i> Note IA
+              <i className="fas fa-lightbulb mr-2 text-emerald-500"></i> Note IA
             </h4>
-            <p className="text-blue-700 text-xs leading-relaxed font-medium">
+            <p className="text-emerald-700 text-xs leading-relaxed font-medium">
               "3 nouveaux programmes détectés en Martinique. Optimisez vos dossiers avec l'assistant de rédaction."
             </p>
           </div>
@@ -188,11 +188,11 @@ const Dashboard: React.FC<DashboardProps> = ({ onSelectProject, onCreateNew }) =
           <div className="bg-white rounded-3xl shadow-2xl p-8 max-w-md w-full animate-in zoom-in-95">
             <h3 className="text-xl font-black text-slate-900 mb-2">Outil: {showToolModal}</h3>
             <p className="text-slate-500 text-sm mb-6">
-              Cette fonctionnalité est en cours de déploiement. Elle vous permettra d'automatiser vos analyses de {showToolModal.toLowerCase()} via l'IA FundingPilot.
+              Cette fonctionnalité est en cours de déploiement. Elle vous permettra d'automatiser vos analyses de {showToolModal.toLowerCase()} via l'IA SUB'ECOIMPACT.
             </p>
             <button 
               onClick={() => setShowToolModal(null)}
-              className="w-full bg-blue-600 text-white py-3 rounded-xl font-bold"
+              className="w-full bg-emerald-600 text-white py-3 rounded-xl font-bold"
             >
               Compris
             </button>
@@ -208,14 +208,14 @@ const QuickToolButton: React.FC<{ icon: string, label: string, onClick?: () => v
     onClick={onClick}
     className="w-full flex items-center p-3 rounded-xl bg-white/5 hover:bg-white/10 transition-colors text-left group"
   >
-    <i className={`fas ${icon} w-8 text-blue-400 text-sm`}></i>
+    <i className={`fas ${icon} w-8 text-emerald-400 text-sm`}></i>
     <span className="text-xs font-bold text-slate-300 group-hover:text-white transition-colors">{label}</span>
   </button>
 );
 
 const StatCard: React.FC<{ label: string, value: number, icon: string, color: string }> = ({ label, value, icon, color }) => {
   const colorClasses: any = {
-    blue: 'bg-blue-50 text-blue-600 border-blue-100 shadow-blue-50',
+    blue: 'bg-emerald-50 text-emerald-600 border-emerald-100 shadow-emerald-50',
     orange: 'bg-orange-50 text-orange-600 border-orange-100 shadow-orange-50',
     green: 'bg-green-50 text-green-600 border-green-100 shadow-green-50',
   };
@@ -235,7 +235,7 @@ const StatCard: React.FC<{ label: string, value: number, icon: string, color: st
 const StatusBadge: React.FC<{ status: ProjectStatus }> = ({ status }) => {
   const styles: any = {
     [ProjectStatus.QUALIFICATION]: 'bg-slate-100 text-slate-600',
-    [ProjectStatus.DISCOVERY]: 'bg-blue-100 text-blue-600',
+    [ProjectStatus.DISCOVERY]: 'bg-emerald-100 text-emerald-600',
     [ProjectStatus.PREPARATION]: 'bg-orange-100 text-orange-600',
     [ProjectStatus.SUBMITTED]: 'bg-purple-100 text-purple-600',
     [ProjectStatus.APPROVED]: 'bg-green-100 text-green-600',

@@ -12,18 +12,18 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart }) => {
       <section className="relative bg-white pt-16 pb-32 overflow-hidden">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row items-center">
           <div className="md:w-1/2 mb-12 md:mb-0 z-10">
-            <div className="inline-flex items-center px-3 py-1 rounded-full bg-blue-50 text-blue-600 text-xs font-bold mb-6">
+            <div className="inline-flex items-center px-3 py-1 rounded-full bg-emerald-50 text-emerald-600 text-xs font-bold mb-6">
               <span className="mr-2">NOUVEAU</span> IA de détection DOM-TOM activée
             </div>
             <h1 className="text-4xl md:text-6xl font-extrabold text-slate-900 leading-tight mb-6">
               Sécurisez vos subventions <br/>
-              <span className="text-blue-600 underline decoration-blue-200">en un temps record.</span>
+              <span className="text-emerald-600 underline decoration-emerald-200">en un temps record.</span>
             </h1>
             <p className="text-xl text-slate-600 mb-10 max-w-lg leading-relaxed">
-              De la détection des aides à la génération de votre dossier final, FundingPilot automatise les tâches complexes pour les consultants et les entreprises.
+              De la détection des aides à la génération de votre dossier final, SUB'ECOIMPACT automatise les tâches complexes pour les consultants et les entreprises engagées.
             </p>
             <div className="flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4">
-              <button onClick={onStart} className="bg-blue-600 text-white px-8 py-4 rounded-xl font-bold text-lg hover:bg-blue-700 shadow-lg shadow-blue-200 transition-all flex items-center justify-center">
+              <button onClick={onStart} className="bg-emerald-600 text-white px-8 py-4 rounded-xl font-bold text-lg hover:bg-emerald-700 shadow-lg shadow-emerald-200 transition-all flex items-center justify-center">
                 Lancer un diagnostic <i className="fas fa-arrow-right ml-2 text-sm"></i>
               </button>
               <button className="bg-white border-2 border-slate-200 text-slate-700 px-8 py-4 rounded-xl font-bold text-lg hover:border-slate-300 transition-all">
@@ -32,12 +32,12 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart }) => {
             </div>
           </div>
           <div className="md:w-1/2 relative">
-             <div className="absolute top-0 right-0 -mr-20 -mt-20 w-96 h-96 bg-blue-100 rounded-full mix-blend-multiply filter blur-3xl opacity-30"></div>
+             <div className="absolute top-0 right-0 -mr-20 -mt-20 w-96 h-96 bg-emerald-100 rounded-full mix-blend-multiply filter blur-3xl opacity-30"></div>
              <div className="absolute bottom-0 left-0 -ml-20 -mb-20 w-80 h-80 bg-cyan-100 rounded-full mix-blend-multiply filter blur-3xl opacity-30"></div>
              <img 
-               src="https://picsum.photos/seed/funding/800/600" 
-               alt="Dashboard preview" 
-               className="rounded-2xl shadow-2xl relative z-10 border border-slate-100"
+               src="/assets/logo.png" 
+               alt="SUB'ECOIMPACT Logo" 
+               className="rounded-2xl shadow-2xl relative z-10 border border-slate-100 bg-white p-8"
              />
           </div>
         </div>
@@ -71,12 +71,12 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart }) => {
       </section>
 
       {/* DOM Focus Section */}
-      <section className="py-24 bg-blue-600 text-white overflow-hidden relative">
+      <section className="py-24 bg-emerald-600 text-white overflow-hidden relative">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row items-center gap-12">
            <div className="md:w-1/2">
               <h2 className="text-3xl font-bold mb-6">Expertise Spécifique Antilles-Guyane</h2>
-              <p className="text-blue-100 text-lg mb-8">
-                Les aides en Outre-mer (FEDER, aides régionales spécifiques, détaxe) nécessitent une expertise locale. FundingPilot intègre ces spécificités pour Martinique, Guadeloupe et Guyane.
+              <p className="text-emerald-100 text-lg mb-8">
+                Les aides à l'investissement et à la transition écologique nécessitent une expertise pointue. SUB'ECOIMPACT intègre les dispositifs nationaux et territoriaux pour maximiser votre impact.
               </p>
               <ul className="space-y-4">
                  <li className="flex items-center"><i className="fas fa-check-circle mr-3 text-cyan-300"></i> Intégration des dispositifs locaux</li>
@@ -97,7 +97,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart }) => {
            <div className="relative z-10">
             <h2 className="text-3xl font-bold mb-6">Prêt à accélérer vos financements ?</h2>
             <p className="text-slate-400 mb-10 text-lg">Rejoignez les consultants qui ont réduit leur temps administratif de 60%.</p>
-            <button onClick={onStart} className="bg-blue-600 text-white px-10 py-4 rounded-xl font-bold text-lg hover:bg-blue-700 transition-all">
+            <button onClick={onStart} className="bg-emerald-600 text-white px-10 py-4 rounded-xl font-bold text-lg hover:bg-emerald-700 transition-all">
               Démarrer gratuitement
             </button>
            </div>
@@ -112,7 +112,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart }) => {
 
 const FeatureCard: React.FC<{ icon: string, title: string, desc: string }> = ({ icon, title, desc }) => (
   <div className="bg-white p-8 rounded-2xl shadow-sm border border-slate-100 hover:shadow-md transition-shadow">
-    <div className="w-14 h-14 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center text-2xl mb-6">
+    <div className="w-14 h-14 bg-emerald-50 text-emerald-600 rounded-xl flex items-center justify-center text-2xl mb-6">
       <i className={`fas ${icon}`}></i>
     </div>
     <h3 className="text-xl font-bold text-slate-900 mb-3">{title}</h3>
