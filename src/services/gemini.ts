@@ -1,5 +1,5 @@
 
-import { GoogleGenAI, Type } from "@google/genai";
+import { GoogleGenAI } from "@google/genai";
 import { Client, Grant, Project, DocumentFile } from "../types";
 
 const getAI = () => {
@@ -15,7 +15,7 @@ const getAI = () => {
       throw new Error("apikey_missing");
     }
     
-    // Switch to v1beta which often has better support for some features in the new SDK
+    // Using v1beta as it's the most feature-rich for Flash 2.0
     return new GoogleGenAI({ 
       apiKey: key,
       apiVersion: 'v1beta' 
@@ -37,8 +37,27 @@ async function withRetry<T>(fn: () => Promise<T>, retries = 3, initialDelay = 20
   }
 }
 
-// Using gemini-1.5-flash which is most stable across versions
-const MODEL_NAME = "gemini-1.5-flash";
+// Switching to the most powerful and recent model
+const MODEL_NAME = "gemini-2.0-flash";
+
+const extractJSON = (text: string) => {
+  try {
+    // Try direct parse first
+    return JSON.parse(text);
+  } catch (e) {
+    // Fallback: extract JSON from markdown or text
+    const match = text.match(/\{[\s\S]*\}|\[[\s\S]*\]/);
+    if (match) {
+      try {
+        return JSON.parse(match[0]);
+      } catch (e2) {
+        console.error("Failed to parse extracted JSON", e2);
+        return null;
+      }
+    }
+    return null;
+  }
+};
 
 export const geminiService = {
   async analyzeDocument(input: DocumentFile[] | string): Promise<Partial<Project>> {
@@ -49,48 +68,24 @@ export const geminiService = {
     
     corpus = corpus.substring(0, 30000);
 
-    const prompt = `Tu es un expert en ingénierie de financement public pour SUB'ÉCO IMPACT. Analyse ce corpus de documents et extrais TOUTES les informations possibles pour compléter le dossier de subvention.
-    Format JSON uniquement. Soyez précis.
+    const prompt = `Tu es un expert en ingénierie de financement public pour SUB'ÉCO IMPACT. 
+    Analyse ce corpus de documents et extrais TOUTES les informations possibles pour compléter le dossier de subvention.
+    
+    RETOURNE EXCLUSIVEMENT UN OBJET JSON avec ces clés : 
+    title, theme, context, projectType, startDate, endDate, duration, target, objectives, expectedResults, location, financingPlan.
     
     DOCUMENTS :
     ${corpus}`;
 
     return withRetry(async () => {
-      // Trying the most compatible call structure
+      // Removing config fields that cause 400 errors and relying on prompt + extraction
       const response = await ai.models.generateContent({
         model: MODEL_NAME,
-        contents: prompt,
-        config: {
-          responseMimeType: "application/json",
-          // Fallback schema if natively supported, otherwise we rely on prompt
-          responseSchema: {
-            type: Type.OBJECT,
-            properties: {
-              title: { type: Type.STRING },
-              theme: { type: Type.STRING },
-              context: { type: Type.STRING },
-              projectType: { type: Type.STRING },
-              startDate: { type: Type.STRING },
-              endDate: { type: Type.STRING },
-              duration: { type: Type.STRING },
-              target: { type: Type.STRING },
-              objectives: { type: Type.STRING },
-              expectedResults: { type: Type.STRING },
-              location: { type: Type.STRING },
-              financingPlan: { type: Type.STRING }
-            }
-          }
-        }
+        contents: prompt
       });
       
-      const text = response.text || "{}";
-      try {
-        return JSON.parse(text);
-      } catch (e) {
-        // Fallback: extract JSON if buried in Markdown
-        const jsonMatch = text.match(/\{[\s\S]*\}/);
-        return jsonMatch ? JSON.parse(jsonMatch[0]) : {};
-      }
+      const result = extractJSON(response.text || "{}");
+      return result || {};
     });
   },
 
@@ -99,37 +94,17 @@ export const geminiService = {
     const prompt = `Tu es l'expert de SUB'ÉCO IMPACT. Trouve des aides réelles pour : ${client.name} (${client.region}).
     Secteur: ${client.sector}. Projet: ${project.title}.
     Budget estimé: ${project.financingPlan}.
-    Retourne une liste de dispositifs financiers (FEDER, ADEME, Région, aides à la transition écologique). FORMAT JSON ARRAY.`;
+    
+    RETOURNE EXCLUSIVEMENT UN ARRAY JSON d'objets avec : id, title, provider, amount, description.
+    Ne rajoute aucun texte avant ou après.`;
 
     return withRetry(async () => {
       const response = await ai.models.generateContent({
         model: MODEL_NAME,
-        contents: prompt,
-        config: {
-          responseMimeType: "application/json",
-          responseSchema: {
-            type: Type.ARRAY,
-            items: {
-              type: Type.OBJECT,
-              properties: {
-                id: { type: Type.STRING },
-                title: { type: Type.STRING },
-                provider: { type: Type.STRING },
-                amount: { type: Type.STRING },
-                description: { type: Type.STRING }
-              },
-              required: ["id", "title", "provider", "amount", "description"]
-            }
-          }
-        }
+        contents: prompt
       });
-      const text = response.text || "[]";
-      try {
-        return JSON.parse(text);
-      } catch (e) {
-        const jsonMatch = text.match(/\[[\s\S]*\]/);
-        return jsonMatch ? JSON.parse(jsonMatch[0]) : [];
-      }
+      const result = extractJSON(response.text || "[]");
+      return Array.isArray(result) ? result : [];
     });
   },
 
