@@ -49,8 +49,8 @@ async function withRetry<T>(fn: () => Promise<T>, retries = 5, initialDelay = 10
   }
 }
 
-// Using the most resilient frontier model (1.5 Pro) for analytical precision
-const MODEL_NAME = "gemini-1.5-pro";
+// Using the most widely available minimalist model (8B) to maximize regional compatibility in EEA
+const MODEL_NAME = "gemini-1.5-flash-8b";
 
 const extractJSON = (text: string) => {
   try {
