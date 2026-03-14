@@ -4,30 +4,53 @@ import OpenAI from "openai";
 import { Client, Grant, Project, DocumentFile } from "../types";
 
 const getAIConfig = () => {
-    const key = (
-      (import.meta as any).env?.VITE_GEMINI_API_KEY || 
-      (import.meta as any).env?.VITE_OPENAI_API_KEY ||
-      localStorage.getItem('GEMINI_API_KEY') || 
-      localStorage.getItem('OPENAI_API_KEY') ||
-      ""
+    // 1. Get current preference if set
+    const preferredProvider = localStorage.getItem('AI_PROVIDER');
+    
+    // 2. Get keys
+    const geminiKey = (
+        localStorage.getItem('GEMINI_API_KEY') || 
+        (import.meta as any).env?.VITE_GEMINI_API_KEY || 
+        ""
+    ).trim();
+
+    const openaiKey = (
+        localStorage.getItem('OPENAI_API_KEY') || 
+        (import.meta as any).env?.VITE_OPENAI_API_KEY ||
+        ""
     ).trim();
   
-    if (!key || key === "undefined" || key === "null") {
+    // 3. Select final key and provider
+    let selectedProvider = preferredProvider || (openaiKey.startsWith("sk-") ? "openai" : "gemini");
+    let activeKey = selectedProvider === "openai" ? openaiKey : geminiKey;
+
+    // Fallback if the preferred one has no key
+    if (!activeKey) {
+        if (openaiKey) {
+            selectedProvider = "openai";
+            activeKey = openaiKey;
+        } else if (geminiKey) {
+            selectedProvider = "gemini";
+            activeKey = geminiKey;
+        }
+    }
+
+    if (!activeKey || activeKey === "undefined" || activeKey === "null") {
       throw new Error("apikey_missing");
     }
 
     // Detect provider
-    if (key.startsWith("sk-")) {
+    if (selectedProvider === "openai") {
         return {
             provider: "openai" as const,
-            openai: new OpenAI({ apiKey: key, dangerouslyAllowBrowser: true }),
+            openai: new OpenAI({ apiKey: activeKey, dangerouslyAllowBrowser: true }),
             model: "gpt-4o-mini"
         };
     }
     
     return {
         provider: "gemini" as const,
-        gemini: new GoogleGenAI({ apiKey: key, apiVersion: 'v1beta' }),
+        gemini: new GoogleGenAI({ apiKey: activeKey, apiVersion: 'v1beta' }),
         model: "gemini-1.5-flash-8b"
     };
 };
@@ -100,7 +123,6 @@ export const geminiService = {
         });
         return extractJSON(response.choices[0].message.content || "{}") || {};
       } else if (config.provider === "gemini" && config.gemini) {
-        // Correct usage for @google/genai SDK (it's different from @google/generative-ai)
         const response = await config.gemini.models.generateContent({
             model: config.model,
             contents: [{ role: 'user', parts: [{ text: prompt }] }]

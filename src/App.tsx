@@ -5,10 +5,11 @@ import Dashboard from './views/Dashboard';
 import ClientForm from './views/ClientForm';
 import ProjectDetail from './views/ProjectDetail';
 import LoginScreen from './views/LoginScreen';
+import AdminSettings from './views/AdminSettings';
 import { UserRole } from './types';
 
 const App: React.FC = () => {
-  const [view, setView] = useState<'landing' | 'dashboard' | 'form' | 'project' | 'login'>('landing');
+  const [view, setView] = useState<'landing' | 'dashboard' | 'form' | 'project' | 'login' | 'settings'>('landing');
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
   const [user, setUser] = useState<UserRole | null>(null);
 
@@ -71,6 +72,7 @@ const App: React.FC = () => {
                 <>
                   <button onClick={() => setView('dashboard')} className={`text-sm font-bold tracking-tight transition-colors ${view === 'dashboard' ? 'text-emerald-600' : 'text-slate-500 hover:text-slate-900'}`}>Pilotage</button>
                   <button onClick={() => setView('form')} className={`text-sm font-bold tracking-tight transition-colors ${view === 'form' ? 'text-emerald-600' : 'text-slate-500 hover:text-slate-900'}`}>Nouveau Dossier</button>
+                  <button onClick={() => setView('settings')} className={`text-sm font-bold tracking-tight transition-colors ${view === 'settings' ? 'text-emerald-600' : 'text-slate-500 hover:text-slate-900'}`}>Paramètres IA</button>
                   <div className="flex items-center space-x-4 pl-6 border-l border-slate-200">
                     <div className="flex flex-col text-right">
                       <span className="text-xs font-bold text-slate-900">{user.name}</span>
@@ -110,6 +112,7 @@ const App: React.FC = () => {
         {view === 'dashboard' && <Dashboard onSelectProject={navigateToProject} onCreateNew={() => setView('form')} />}
         {view === 'form' && <ClientForm onSuccess={(projectId) => navigateToProject(projectId)} />}
         {view === 'project' && selectedProjectId && <ProjectDetail projectId={selectedProjectId} onBack={() => setView('dashboard')} />}
+        {view === 'settings' && <AdminSettings />}
       </main>
 
       {/* Footer */}
