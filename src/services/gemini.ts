@@ -16,7 +16,11 @@ const getAI = () => {
       throw new Error("apikey_missing");
     }
     
-    return new GoogleGenAI({ apiKey: key });
+    // Initialisation avec forçage de la version v1 pour plus de stabilité
+    return new GoogleGenAI({ 
+      apiKey: key,
+      apiVersion: 'v1' 
+    });
 };
 
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
@@ -34,6 +38,9 @@ async function withRetry<T>(fn: () => Promise<T>, retries = 3, initialDelay = 20
   }
 }
 
+// Utilisation de gemini-2.0-flash, plus performant et mieux supporté par ce SDK
+const MODEL_NAME = "gemini-2.0-flash";
+
 export const geminiService = {
   async analyzeDocument(input: DocumentFile[] | string): Promise<Partial<Project>> {
     const ai = getAI();
@@ -43,7 +50,7 @@ export const geminiService = {
     
     corpus = corpus.substring(0, 30000);
 
-    const prompt = `Tu es un expert en ingénierie de financement public. Analyse ce corpus de documents et extrais TOUTES les informations possibles pour compléter le dossier de subvention.
+    const prompt = `Tu es un expert en ingénierie de financement public pour SUB'ÉCO IMPACT. Analyse ce corpus de documents et extrais TOUTES les informations possibles pour compléter le dossier de subvention.
     Format JSON uniquement. Soyez précis.
     
     DOCUMENTS :
@@ -51,7 +58,7 @@ export const geminiService = {
 
     return withRetry(async () => {
       const response = await ai.models.generateContent({
-        model: "gemini-1.5-flash",
+        model: MODEL_NAME,
         contents: prompt,
         config: {
           responseMimeType: "application/json",
@@ -80,14 +87,14 @@ export const geminiService = {
 
   async detectFunding(client: Client, project: Project): Promise<Grant[]> {
     const ai = getAI();
-    const prompt = `Trouve des aides réelles pour : ${client.name} (${client.region}).
+    const prompt = `Tu es l'expert de SUB'ÉCO IMPACT. Trouve des aides réelles pour : ${client.name} (${client.region}).
     Secteur: ${client.sector}. Projet: ${project.title}.
     Budget estimé: ${project.financingPlan}.
-    Retourne une liste de dispositifs financiers (FEDER, ADEME, Région). FORMAT JSON ARRAY.`;
+    Retourne une liste de dispositifs financiers (FEDER, ADEME, Région, aides à la transition écologique). FORMAT JSON ARRAY.`;
 
     return withRetry(async () => {
       const response = await ai.models.generateContent({
-        model: "gemini-1.5-flash",
+        model: MODEL_NAME,
         contents: prompt,
         config: {
           responseMimeType: "application/json",
@@ -113,7 +120,7 @@ export const geminiService = {
 
   async generateDocument(client: Client, project: Project, grant: Grant, docType: string): Promise<string> {
     const ai = getAI();
-    const prompt = `Rédige une ${docType} officielle prête à l'emploi.
+    const prompt = `Rédige une ${docType} officielle pour SUB'ÉCO IMPACT, prête à l'emploi.
     
     STRICT : Ne commence JAMAIS par "Voici..." ou "Voici la proposition...". Commence DIRECTEMENT par le contenu.
     
@@ -127,7 +134,7 @@ export const geminiService = {
 
     return withRetry(async () => {
       const response = await ai.models.generateContent({
-        model: "gemini-1.5-flash",
+        model: MODEL_NAME,
         contents: prompt
       });
       let text = response.text || "";
