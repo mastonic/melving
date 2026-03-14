@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import { storage } from '../services/storage';
 import { geminiService } from '../services/gemini';
 import { Client, Project, ProjectStatus } from '../types';
+import { generateUUID } from '../utils/uuid';
 
 interface ClientFormProps {
   onSuccess: (projectId: string) => void;
@@ -40,8 +41,8 @@ const ClientForm: React.FC<ClientFormProps> = ({ onSuccess }) => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const clientId = crypto.randomUUID();
-    const projectId = crypto.randomUUID();
+    const clientId = generateUUID();
+    const projectId = generateUUID();
 
     const client: Client = {
       id: clientId, name: formData.name, email: formData.email, phone: formData.phone,

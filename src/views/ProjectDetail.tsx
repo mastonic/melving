@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { storage } from '../services/storage';
 import { geminiService } from '../services/gemini';
 import { Project, Client, Grant, ProjectStatus, DocumentFile } from '../types';
+import { generateUUID } from '../utils/uuid';
 
 interface ProjectDetailProps {
   projectId: string;
@@ -74,7 +75,7 @@ const ProjectDetail: React.FC<ProjectDetailProps> = ({ projectId, onBack }) => {
       reader.onload = (event) => {
         const content = event.target?.result as string;
         const newDoc: DocumentFile = {
-          id: crypto.randomUUID(),
+          id: generateUUID(),
           name: file.name,
           type: file.type,
           content: content,
@@ -101,7 +102,7 @@ const ProjectDetail: React.FC<ProjectDetailProps> = ({ projectId, onBack }) => {
   const handleAddNote = () => {
     if (!noteContent.trim() || !project) return;
     const newDoc: DocumentFile = {
-      id: crypto.randomUUID(),
+      id: generateUUID(),
       name: `Note - ${new Date().toLocaleTimeString('fr-FR')}`,
       type: 'text/plain',
       content: noteContent,
@@ -158,7 +159,7 @@ const ProjectDetail: React.FC<ProjectDetailProps> = ({ projectId, onBack }) => {
     if (!generatedDoc || !project || !currentGrant) return;
     
     const newDoc: DocumentFile = {
-      id: crypto.randomUUID(),
+      id: generateUUID(),
       name: `Lettre_Intention_${currentGrant.provider}.txt`,
       type: 'text/plain',
       content: generatedDoc,
