@@ -4,19 +4,20 @@ import { Client, Grant, Project, DocumentFile } from "../types";
 
 // Helper to get a fresh instance of Gemini API client
 const getAI = () => {
-  const key = (
-    (import.meta as any).env?.VITE_GEMINI_API_KEY || 
-    (process.env as any).API_KEY || 
-    (window as any).GEMINI_API_KEY || 
-    localStorage.getItem('GEMINI_API_KEY') || 
-    ""
-  ).trim();
-
-  if (!key || key === "undefined") {
-    throw new Error("apikey_missing");
-  }
+    const key = (
+      (import.meta as any).env?.VITE_GEMINI_API_KEY || 
+      (process.env as any).API_KEY || 
+      (window as any).GEMINI_API_KEY || 
+      localStorage.getItem('GEMINI_API_KEY') || 
+      ""
+    ).trim();
   
-  return new GoogleGenAI({ apiKey: key });
+    if (!key || key === "undefined") {
+      throw new Error("apikey_missing");
+    }
+    
+    // Using the newer SDK initialization
+    return new GoogleGenAI({ apiKey: key });
 };
 
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
@@ -38,7 +39,6 @@ export const geminiService = {
   async analyzeDocument(documents: DocumentFile[]): Promise<Partial<Project>> {
     const ai = getAI();
     
-    // On regroupe tous les contenus textuels
     const corpus = documents
       .map(doc => `--- DOCUMENT: ${doc.name} ---\n${doc.content}`)
       .join("\n\n")
@@ -51,10 +51,11 @@ export const geminiService = {
     ${corpus}`;
 
     return withRetry(async () => {
-      const response = await ai.models.generateContent({
-        model: "models/gemini-1.5-flash",
-        contents: prompt,
-        config: {
+      // Corrected model name and call structure for @google/genai
+      const model = ai.getGenerativeModel({ model: "gemini-1.5-flash" });
+      const response = await model.generateContent({
+        contents: [{ role: 'user', parts: [{ text: prompt }] }],
+        generationConfig: {
           responseMimeType: "application/json",
           responseSchema: {
             type: Type.OBJECT,
@@ -76,8 +77,9 @@ export const geminiService = {
         }
       });
 
+      const result = await response.response;
       try {
-        let text = response.text || "{}";
+        let text = result.text() || "{}";
         return JSON.parse(text);
       } catch (e) {
         console.error("Failed to parse", e);
@@ -94,10 +96,10 @@ export const geminiService = {
     Retourne une liste de dispositifs financiers (FEDER, ADEME, Région). FORMAT JSON ARRAY.`;
 
     return withRetry(async () => {
-      const response = await ai.models.generateContent({
-        model: "models/gemini-1.5-flash",
-        contents: prompt,
-        config: {
+      const model = ai.getGenerativeModel({ model: "gemini-1.5-flash" });
+      const response = await model.generateContent({
+        contents: [{ role: 'user', parts: [{ text: prompt }] }],
+        generationConfig: {
           responseMimeType: "application/json",
           responseSchema: {
             type: Type.ARRAY,
@@ -115,7 +117,8 @@ export const geminiService = {
           }
         }
       });
-      return JSON.parse(response.text || "[]");
+      const result = await response.response;
+      return JSON.parse(result.text() || "[]");
     });
   },
 
@@ -134,11 +137,12 @@ export const geminiService = {
     - Aide : ${grant.title} de ${grant.provider}`;
 
     return withRetry(async () => {
-      const response = await ai.models.generateContent({
-        model: "models/gemini-1.5-flash",
-        contents: prompt,
+      const model = ai.getGenerativeModel({ model: "gemini-1.5-flash" });
+      const response = await model.generateContent({
+        contents: [{ role: 'user', parts: [{ text: prompt }] }]
       });
-      let text = response.text || "";
+      const result = await response.response;
+      let text = result.text() || "";
       // Nettoyage agressif du blabla d'introduction
       text = text.replace(/^[\s\S]*?(Objet\s*:|À\s+l'attention|Monsieur|Madame|Cher|Chère)/i, "$1").trim();
       return text;
