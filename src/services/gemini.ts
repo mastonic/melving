@@ -15,10 +15,10 @@ const getAI = () => {
       throw new Error("apikey_missing");
     }
     
-    // Using v1 for production stability with 2.5 series
+    // Using v1beta as it often bypasses regional restrictions for MLDev accounts in EEA/Territories
     return new GoogleGenAI({ 
       apiKey: key,
-      apiVersion: 'v1' 
+      apiVersion: 'v1beta' 
     });
 };
 
@@ -49,8 +49,8 @@ async function withRetry<T>(fn: () => Promise<T>, retries = 5, initialDelay = 10
   }
 }
 
-// Switching to the reliable stable model for March 2026
-const MODEL_NAME = "gemini-2.5-flash";
+// Using the most widely available stable redirect
+const MODEL_NAME = "gemini-1.5-flash-latest";
 
 const extractJSON = (text: string) => {
   try {

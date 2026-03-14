@@ -504,7 +504,9 @@ const SynthesisField: React.FC<{ label: string, value?: string, isEditing: boole
         <input type={type} className="w-full px-6 py-4 bg-slate-50 rounded-2xl border border-slate-200 text-sm font-bold outline-none" value={value || ''} onChange={e => onChange(e.target.value)} />
       )
     ) : (
-      <div className="p-6 rounded-3xl bg-slate-50/50 text-slate-900 font-bold text-sm whitespace-pre-wrap">{value || <span className="text-slate-300 italic">Analyse IA requise...</span>}</div>
+      <div className="p-6 rounded-3xl bg-slate-50/50 text-slate-900 font-bold text-sm whitespace-pre-wrap">
+        {typeof value === 'object' ? JSON.stringify(value, null, 2) : (value || <span className="text-slate-300 italic">Analyse IA requise...</span>)}
+      </div>
     )}
   </div>
 );
