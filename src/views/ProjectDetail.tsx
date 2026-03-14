@@ -48,7 +48,8 @@ const ProjectDetail: React.FC<ProjectDetailProps> = ({ projectId, onBack }) => {
     setIsAnalyzing(false);
     setLoading(false);
 
-    if (error?.message === "apikey_missing") {
+    const errorMsg = error?.message || "";
+    if (errorMsg === "apikey_missing" || errorMsg.includes("API Key must be set")) {
       const newKey = prompt("Clé API Gemini manquante.\n\nVous pouvez en obtenir une gratuitement sur :\nhttps://aistudio.google.com/app/apikey\n\nVeuillez saisir votre clé API :");
       if (newKey && newKey.trim()) {
         localStorage.setItem('GEMINI_API_KEY', newKey.trim());

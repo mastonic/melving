@@ -12,12 +12,11 @@ const getAI = () => {
       ""
     ).trim();
   
-    if (!key || key === "undefined") {
+    if (!key || key === "undefined" || key === "null") {
       throw new Error("apikey_missing");
     }
     
-    // The correct way to initialize the GoogleGenAI instance with the API key
-    return new GoogleGenAI(key);
+    return new GoogleGenAI({ apiKey: key });
 };
 
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
@@ -36,20 +35,12 @@ async function withRetry<T>(fn: () => Promise<T>, retries = 3, initialDelay = 20
 }
 
 export const geminiService = {
-  // Updated to handle both raw text (from ClientForm) and DocumentFile array (from ProjectDetail)
   async analyzeDocument(input: DocumentFile[] | string): Promise<Partial<Project>> {
     const ai = getAI();
+    let corpus = typeof input === 'string' 
+      ? input 
+      : input.map(doc => `--- DOCUMENT: ${doc.name} ---\n${doc.content}`).join("\n\n");
     
-    let corpus = "";
-    if (typeof input === 'string') {
-      corpus = input;
-    } else {
-      corpus = input
-        .map(doc => `--- DOCUMENT: ${doc.name} ---\n${doc.content}`)
-        .join("\n\n");
-    }
-    
-    // Limit corpus size to stay within manageable context for Flash
     corpus = corpus.substring(0, 30000);
 
     const prompt = `Tu es un expert en ingénierie de financement public. Analyse ce corpus de documents et extrais TOUTES les informations possibles pour compléter le dossier de subvention.
@@ -59,10 +50,10 @@ export const geminiService = {
     ${corpus}`;
 
     return withRetry(async () => {
-      const model = ai.getGenerativeModel({ model: "gemini-1.5-flash" });
-      const response = await model.generateContent({
-        contents: [{ role: 'user', parts: [{ text: prompt }] }],
-        generationConfig: {
+      const response = await ai.models.generateContent({
+        model: "gemini-1.5-flash",
+        contents: prompt,
+        config: {
           responseMimeType: "application/json",
           responseSchema: {
             type: Type.OBJECT,
@@ -83,15 +74,7 @@ export const geminiService = {
           }
         }
       });
-
-      const result = await response.response;
-      try {
-        let text = result.text() || "{}";
-        return JSON.parse(text);
-      } catch (e) {
-        console.error("Failed to parse", e);
-        return {};
-      }
+      return JSON.parse(response.text || "{}");
     });
   },
 
@@ -103,10 +86,10 @@ export const geminiService = {
     Retourne une liste de dispositifs financiers (FEDER, ADEME, Région). FORMAT JSON ARRAY.`;
 
     return withRetry(async () => {
-      const model = ai.getGenerativeModel({ model: "gemini-1.5-flash" });
-      const response = await model.generateContent({
-        contents: [{ role: 'user', parts: [{ text: prompt }] }],
-        generationConfig: {
+      const response = await ai.models.generateContent({
+        model: "gemini-1.5-flash",
+        contents: prompt,
+        config: {
           responseMimeType: "application/json",
           responseSchema: {
             type: Type.ARRAY,
@@ -124,8 +107,7 @@ export const geminiService = {
           }
         }
       });
-      const result = await response.response;
-      return JSON.parse(result.text() || "[]");
+      return JSON.parse(response.text || "[]");
     });
   },
 
@@ -144,13 +126,11 @@ export const geminiService = {
     - Aide : ${grant.title} de ${grant.provider}`;
 
     return withRetry(async () => {
-      const model = ai.getGenerativeModel({ model: "gemini-1.5-flash" });
-      const response = await model.generateContent({
-        contents: [{ role: 'user', parts: [{ text: prompt }] }]
+      const response = await ai.models.generateContent({
+        model: "gemini-1.5-flash",
+        contents: prompt
       });
-      const result = await response.response;
-      let text = result.text() || "";
-      // Nettoyage agressif du blabla d'introduction
+      let text = response.text || "";
       text = text.replace(/^[\s\S]*?(Objet\s*:|À\s+l'attention|Monsieur|Madame|Cher|Chère)/i, "$1").trim();
       return text;
     });
