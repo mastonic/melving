@@ -84,10 +84,10 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart }) => {
                  <li className="flex items-center"><i className="fas fa-check-circle mr-3 text-cyan-300"></i> Accompagnement sur mesure</li>
               </ul>
            </div>
-           <div className="md:w-1/2 grid grid-cols-2 gap-4">
-              <img src="https://picsum.photos/seed/mart/300/200" className="rounded-lg shadow-lg rotate-3" />
-              <img src="https://picsum.photos/seed/guad/300/200" className="rounded-lg shadow-lg -rotate-2 mt-8" />
-           </div>
+            <div className="md:w-1/2 grid grid-cols-2 gap-4">
+              <img src="/assets/martinique.png" className="rounded-lg shadow-lg rotate-3" alt="Bureau Martinique" />
+              <img src="/assets/guadeloupe.png" className="rounded-lg shadow-lg -rotate-2 mt-8" alt="Transition Écologique Guadeloupe" />
+            </div>
         </div>
       </section>
 
