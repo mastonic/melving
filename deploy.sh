@@ -1,58 +1,45 @@
 #!/bin/bash
 
 # Configuration
-PROJECT_DIR=$(pwd)
-BRANCH="main"
 APP_NAME="funding-pilot"
 PORT=5800
 
-echo "🚀 Démarrage du déploiement complet..."
+echo "🚀 Déploiement en cours..."
 
-# 1. Vérification et Mise à jour de Node.js (Si < 20)
-NODE_CHECK=$(node -v 2>/dev/null | cut -d'v' -f2 | cut -d'.' -f1 || echo "0")
-if [ "$NODE_CHECK" -lt 20 ]; then
-    echo "🌐 Mise à jour de Node.js vers la version 20 (Requis pour Tailwind 4)..."
-    curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
-    sudo apt-get install -y nodejs
-else
-    echo "✅ Node.js version $(node -v) est déjà compatible."
+# 1. Vérification Node.js 20+
+NODE_VER=$(node -v | cut -d'v' -f2 | cut -d'.' -f1)
+if [ "$NODE_VER" -lt 20 ]; then
+    echo "❌ Erreur: Node.js 20+ est requis (actuel: v$NODE_VER)."
+    echo "Exécutez: curl -fsSL https://deb.nodesource.com/setup_20.x | bash - && apt-get install -y nodejs"
+    exit 1
 fi
 
-# 2. Accéder au dossier du projet
-cd $PROJECT_DIR || { echo "❌ Erreur: Répertoire non trouvé"; exit 1; }
-
-# 3. Récupérer le code
-echo "📥 Récupération des nouveautés depuis GitHub ($BRANCH)..."
+# 2. Mise à jour du code
 git reset --hard
-git pull origin $BRANCH
+git pull origin main
 
-# 4. Installation propre des dépendances
-echo "🧹 Nettoyage et installation des dépendances..."
+# 3. Installation PROPRE
+echo "🧹 Nettoyage et installation..."
 rm -rf node_modules package-lock.json
 npm install
 
-# 5. Build
-echo "🛠️ Construction de l'application (Production)..."
+# 4. Build de production (CRITIQUE)
+echo "🛠️ Construction du projet..."
 npm run build
+if [ $? -ne 0 ]; then
+    echo "❌ Erreur: Le build a échoué. Vérifiez les logs ci-dessus."
+    exit 1
+fi
 
-# 6. Gestion de PM2
-echo "⚙️ Configuration de PM2 pour le port $PORT..."
+# 5. Lancement PM2
+echo "⚙️ Redémarrage du serveur sur le port $PORT..."
 if ! command -v pm2 &> /dev/null; then
-    echo "📦 Installation globale de PM2..."
     npm install -g pm2
 fi
 
-# Arrêter l'ancienne instance si elle existe
-pm2 stop $APP_NAME 2>/dev/null || true
 pm2 delete $APP_NAME 2>/dev/null || true
-
-# Lancer la nouvelle instance via 'vite preview' sur le port 5800
-echo "🛰️ Lancement de l'application sur http://85.31.239.237:$PORT"
 pm2 start "npx vite preview --port $PORT --host 0.0.0.0" --name $APP_NAME
-
-# Sauvegarder la configuration PM2 pour le redémarrage du serveur
 pm2 save
 
-echo "🎉 Déploiement terminé avec succès !"
-echo "📊 Statut PM2 :"
+echo "✅ Déploiement réussi sur http://85.31.239.237:$PORT"
 pm2 list
