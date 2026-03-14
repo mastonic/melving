@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Configuration
-PROJECT_DIR="/home/rigahludovic/melving/melving"
+PROJECT_DIR=$(pwd)
 BRANCH="main"
 
 echo "🚀 Démarrage du déploiement..."
