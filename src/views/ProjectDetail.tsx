@@ -23,6 +23,7 @@ const ProjectDetail: React.FC<ProjectDetailProps> = ({ projectId, onBack }) => {
   const [hoveredDoc, setHoveredDoc] = useState<string | null>(null);
   const [noteContent, setNoteContent] = useState('');
   const [showNoteInput, setShowNoteInput] = useState(false);
+  const [contractDoc, setContractDoc] = useState<string | null>(null);
 
   useEffect(() => {
     const p = storage.getProject(projectId);
@@ -132,6 +133,43 @@ const ProjectDetail: React.FC<ProjectDetailProps> = ({ projectId, onBack }) => {
     const updated = { ...project, documents: project.documents.filter(d => d.id !== docId) };
     setProject(updated);
     storage.saveProject(updated);
+  };
+
+  const handleGrantDocUpload = (requiredDocName: string) => (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !project) return;
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const content = event.target?.result as string;
+      const newDoc: DocumentFile = {
+        id: generateUUID(),
+        name: `[${requiredDocName}] ${file.name}`,
+        type: file.type,
+        content,
+        uploadDate: new Date().toISOString()
+      };
+      const existing = (project.grantDocuments || []).filter(d => !d.name.startsWith(`[${requiredDocName}]`));
+      const updated = { ...project, grantDocuments: [...existing, newDoc] };
+      setProject(updated);
+      storage.saveProject(updated);
+    };
+    if (file.type === 'text/plain' || file.name.endsWith('.txt')) {
+      reader.readAsText(file);
+    } else {
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const downloadGrantDoc = (doc: DocumentFile) => {
+    const a = document.createElement('a');
+    if (doc.content.startsWith('data:')) {
+      a.href = doc.content;
+    } else {
+      const blob = new Blob([doc.content], { type: 'text/plain' });
+      a.href = URL.createObjectURL(blob);
+    }
+    a.download = doc.name.replace(/^\[.*?\] /, '');
+    a.click();
   };
 
   const handleRegenerateFromDocs = async () => {
@@ -294,6 +332,43 @@ const ProjectDetail: React.FC<ProjectDetailProps> = ({ projectId, onBack }) => {
 
           {activeTab === 'docs' && (
             <div className="space-y-8 animate-in slide-in-from-bottom-2 duration-500">
+
+              {/* Pièces requises pour l'aide sélectionnée */}
+              {currentGrant && currentGrant.requiredDocuments && currentGrant.requiredDocuments.length > 0 && (
+                <div className="bg-emerald-50 border border-emerald-100 rounded-[2.5rem] p-8 space-y-4">
+                  <h3 className="font-black text-emerald-900 text-sm uppercase tracking-widest flex items-center">
+                    <i className="fas fa-clipboard-list mr-3 text-emerald-600"></i>
+                    Pièces requises — {currentGrant.title}
+                  </h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                    {currentGrant.requiredDocuments.map((docName) => {
+                      const uploaded = (project.grantDocuments || []).find(d => d.name.startsWith(`[${docName}]`));
+                      return (
+                        <div key={docName} className="bg-white rounded-2xl p-4 border border-emerald-100 flex items-center justify-between gap-3">
+                          <div className="flex items-center gap-3 min-w-0">
+                            <div className={`w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 ${uploaded ? 'bg-emerald-100 text-emerald-600' : 'bg-slate-100 text-slate-400'}`}>
+                              <i className={`fas ${uploaded ? 'fa-check' : 'fa-file'} text-xs`}></i>
+                            </div>
+                            <span className="text-xs font-bold text-slate-700 truncate">{docName}</span>
+                          </div>
+                          <div className="flex items-center gap-2 flex-shrink-0">
+                            {uploaded && (
+                              <button onClick={() => downloadGrantDoc(uploaded)} className="w-8 h-8 rounded-xl bg-slate-100 text-slate-600 flex items-center justify-center hover:bg-emerald-100 hover:text-emerald-700 transition-all">
+                                <i className="fas fa-download text-xs"></i>
+                              </button>
+                            )}
+                            <label className="w-8 h-8 rounded-xl bg-emerald-600 text-white flex items-center justify-center cursor-pointer hover:bg-emerald-700 transition-all">
+                              <i className="fas fa-upload text-xs"></i>
+                              <input type="file" className="hidden" onChange={handleGrantDocUpload(docName)} />
+                            </label>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
               <div className="flex items-center justify-between">
                 <div className="text-left">
                   <h3 className="text-2xl font-black text-slate-900 tracking-tight">Centre de Connaissances</h3>
@@ -485,18 +560,69 @@ const ProjectDetail: React.FC<ProjectDetailProps> = ({ projectId, onBack }) => {
 
           {activeTab === 'aid' && (project.validatedGrant || currentGrant) && (
             <div className="space-y-6 animate-in zoom-in-95 duration-500">
+              {/* En-tête aide */}
               <div className="bg-slate-900 p-12 rounded-[3rem] text-white shadow-2xl relative overflow-hidden text-left">
                 <h2 className="text-4xl font-black mb-3">{(project.validatedGrant || currentGrant)?.title}</h2>
-                <div className="mt-12 grid grid-cols-2 gap-10">
+                <p className="text-slate-400 text-xs font-bold uppercase tracking-widest mb-8">{(project.validatedGrant || currentGrant)?.provider}</p>
+                <div className="grid grid-cols-2 gap-6">
                   <div className="bg-white/5 p-8 rounded-3xl border border-white/10 text-green-400 text-3xl font-black">
                     {(project.validatedGrant || currentGrant)?.amount}
                   </div>
+                  {(project.validatedGrant || currentGrant)?.fundingRate && (
+                    <div className="bg-white/5 p-8 rounded-3xl border border-white/10">
+                      <p className="text-[10px] text-emerald-400 font-black uppercase tracking-widest mb-2">Taux</p>
+                      <p className="text-white font-black text-lg">{(project.validatedGrant || currentGrant)?.fundingRate}</p>
+                    </div>
+                  )}
                 </div>
+                {(project.validatedGrant || currentGrant)?.url && (
+                  <a
+                    href={(project.validatedGrant || currentGrant)?.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="mt-8 inline-flex items-center gap-2 text-emerald-400 hover:text-emerald-300 text-xs font-black uppercase tracking-widest transition-all"
+                  >
+                    <i className="fas fa-external-link-alt"></i>
+                    Voir la source officielle
+                  </a>
+                )}
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                <div className="bg-white p-10 rounded-[2.5rem] border border-slate-200 text-left">
-                  <h3 className="font-black text-slate-900 uppercase text-xs mb-6">Plan de Financement</h3>
-                  <button onClick={downloadExcel} className="w-full py-5 bg-green-50 text-green-700 font-black text-[11px] uppercase rounded-2xl">Excel (.csv)</button>
+
+              {/* Actions */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="bg-white p-8 rounded-[2.5rem] border border-slate-200 text-left space-y-4">
+                  <h3 className="font-black text-slate-900 uppercase text-xs">Plan de Financement</h3>
+                  <button onClick={downloadExcel} className="w-full py-5 bg-green-50 text-green-700 font-black text-[11px] uppercase rounded-2xl hover:bg-green-100 transition-all">
+                    <i className="fas fa-file-excel mr-2"></i>Excel (.csv)
+                  </button>
+                </div>
+                <div className="bg-white p-8 rounded-[2.5rem] border border-slate-200 text-left space-y-4">
+                  <h3 className="font-black text-slate-900 uppercase text-xs">Contrat de Prestation</h3>
+                  <button
+                    onClick={async () => {
+                      if (!client || !project || !currentGrant) return;
+                      setLoading(true);
+                      try {
+                        const contract = await geminiService.generateContract(client, project, currentGrant);
+                        setContractDoc(contract);
+                        const blob = new Blob([contract], { type: 'text/plain' });
+                        const url = URL.createObjectURL(blob);
+                        const a = document.createElement('a');
+                        a.href = url;
+                        a.download = `Contrat_Prestation_${project.title}.txt`;
+                        a.click();
+                      } catch (e) {
+                        handleAIError(e);
+                      } finally {
+                        setLoading(false);
+                      }
+                    }}
+                    disabled={loading}
+                    className="w-full py-5 bg-slate-900 text-white font-black text-[11px] uppercase rounded-2xl hover:bg-emerald-600 transition-all"
+                  >
+                    {loading ? <i className="fas fa-circle-notch fa-spin mr-2"></i> : <i className="fas fa-file-contract mr-2"></i>}
+                    Générer le Contrat
+                  </button>
                 </div>
               </div>
             </div>

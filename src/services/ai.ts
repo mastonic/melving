@@ -177,7 +177,12 @@ export const geminiService = {
 
     Consulte OBLIGATOIREMENT ces sources spécifiques aux DOM (Martinique/Guadeloupe) :
     AVERE, EDF, DEAL (Direction de l'Environnement de l'Aménagement et du Logement), AFD (Agence Française de Développement), ADEME, CTM (Collectivité Territoriale de Martinique), EPCI, CCI (Chambre de Commerce et d'Industrie), BPI France, Région, FEADER, FEDER, FSE, État.
-    Sois précis et basé sur des dispositifs réels existants en ${client.region}.`;
+    Consulte aussi : https://martinique-renov.ecologie.gouv.fr/dispositifs-2-4
+    Sois précis et basé sur des dispositifs réels existants en ${client.region}.
+
+    Pour chaque aide, inclus aussi :
+    - url : lien officiel du dispositif (si connu)
+    - requiredDocuments : tableau des pièces justificatives à fournir pour cette aide (ex: ["Kbis / extrait SIRENE", "RIB bancaire", "Devis prestataire", "Plan de financement prévisionnel"])`;
 
     return withRetry(async () => {
       if (config.provider === "openai" && config.openai) {
@@ -251,6 +256,66 @@ export const geminiService = {
         const response = await config.gemini.models.generateContent({
             model: config.model,
             contents: [{ role: 'user', parts: [{ text: prompt }] }]
+        });
+        return response.text || "";
+      }
+      return "";
+    });
+  },
+
+  async generateContract(client: Client, project: Project, grant: Grant): Promise<string> {
+    const config = getAIConfig();
+    const today = new Date().toLocaleDateString('fr-FR');
+    const prompt = `Génère un CONTRAT DE PRESTATION DE SERVICE professionnel et complet, prêt à signer.
+
+    STRUCTURE OBLIGATOIRE (suit le modèle des contrats ADEME) :
+    - En-tête : Numéro de contrat, intitulé du projet, montant
+    - ENTRE : le prestataire de service (à compléter par le client) ET le bénéficiaire (${client.name})
+    - ARTICLE 1 – OBJET : description de la prestation liée au projet
+    - ARTICLE 2 – DESCRIPTION DE LA PRESTATION : détail des missions
+    - ARTICLE 3 – DURÉE : durée de la mission
+    - ARTICLE 4 – COÛT ET MODALITÉS DE PAIEMENT : montant, modalités
+    - ARTICLE 5 – OBLIGATIONS DU PRESTATAIRE
+    - ARTICLE 6 – OBLIGATIONS DU CLIENT
+    - ARTICLE 7 – CONFIDENTIALITÉ
+    - ARTICLE 8 – RÉSILIATION
+    - Signatures : Lieu, date (${today}), zones de signature des deux parties
+
+    DONNÉES À INTÉGRER :
+    - Bénéficiaire : ${client.name} (SIRET: ${client.siret || 'À compléter'})
+    - Secteur : ${client.sector}
+    - Région : ${client.region}
+    - Projet : ${project.title}
+    - Contexte : ${project.context || ''}
+    - Objectifs : ${project.objectives || ''}
+    - Durée projet : ${project.duration || ''}
+    - Budget total : ${project.financingPlan || ''}
+    - Aide visée : ${grant.title} (${grant.provider}) — ${grant.amount}
+    - Taux de financement : ${grant.fundingRate || ''}
+
+    RÈGLES :
+    - Document formel, prêt à l'emploi
+    - Commence DIRECTEMENT par l'en-tête du contrat (ex: "CONTRAT DE PRESTATION DE SERVICE N°...")
+    - Laisse [NOM PRESTATAIRE], [ADRESSE], [SIRET PRESTATAIRE] comme placeholders pour le prestataire`;
+
+    return withRetry(async () => {
+      if (config.provider === "openai" && config.openai) {
+        const response = await config.openai.chat.completions.create({
+          model: config.model,
+          messages: [{ role: "user", content: prompt }]
+        });
+        return response.choices[0].message.content || "";
+      } else if (config.provider === "claude" && config.claude) {
+        const response = await config.claude.messages.create({
+          model: config.model,
+          max_tokens: 4096,
+          messages: [{ role: "user", content: prompt }]
+        });
+        return response.content[0].type === "text" ? response.content[0].text : "";
+      } else if (config.provider === "gemini" && config.gemini) {
+        const response = await config.gemini.models.generateContent({
+          model: config.model,
+          contents: [{ role: 'user', parts: [{ text: prompt }] }]
         });
         return response.text || "";
       }

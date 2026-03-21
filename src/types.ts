@@ -51,6 +51,7 @@ export interface Project {
   selectedGrantIds: string[];
   validatedGrant?: Grant; // L'aide validée
   documents: DocumentFile[];
+  grantDocuments?: DocumentFile[]; // Pièces justificatives pour le dossier de subvention
   createdAt: string;
   updatedAt: string;
 }
@@ -67,6 +68,7 @@ export interface Grant {
   funders?: string;
   fundingRate?: string;
   openingPeriod?: string;
+  requiredDocuments?: string[];
 }
 
 export interface UserRole {
