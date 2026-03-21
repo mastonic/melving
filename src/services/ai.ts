@@ -332,5 +332,68 @@ export const geminiService = {
       }
       return "";
     });
+  },
+
+  async generateFromTemplate(client: Client, project: Project, templateName: string, templateType: string, templateTextContent?: string): Promise<string> {
+    const config = getAIConfig();
+    const kbContext = knowledgeService.getContext(3000);
+    const prompt = `Tu es expert en rédaction de documents professionnels pour SUB'ÉCO IMPACT.
+
+Génère un document de type "${templateName}" (format ${templateType.toUpperCase()}) entièrement pré-rempli avec les données du dossier ci-dessous.
+Le document doit être complet, structuré, professionnel et prêt à l'emploi.${templateTextContent ? `\n\nSTRUCTURE DU MODÈLE (respecte cette structure) :\n${templateTextContent.substring(0, 3000)}` : ''}
+
+DONNÉES CLIENT :
+- Nom : ${client.name}
+- Secteur : ${client.sector}
+- Région : ${client.region}
+- Taille : ${client.size}
+- SIRET : ${client.siret || 'À compléter'}
+
+DONNÉES PROJET :
+- Titre : ${project.title}
+- Contexte : ${project.context || ''}
+- Objectifs : ${project.objectives || ''}
+- Résultats attendus : ${project.expectedResults || ''}
+- Durée : ${project.duration || ''}
+- Localisation : ${project.location || ''}
+- Budget / Plan de financement : ${project.financingPlan || ''}
+- Date début : ${project.startDate || ''}
+- Date fin : ${project.endDate || ''}
+${project.validatedGrant ? `
+AIDE VALIDÉE :
+- Titre : ${project.validatedGrant.title}
+- Financeur : ${project.validatedGrant.provider}
+- Montant : ${project.validatedGrant.amount}
+- Taux : ${project.validatedGrant.fundingRate || ''}` : ''}${kbContext ? `\n\nCONTEXTE BASE DE CONNAISSANCES :\n${kbContext}` : ''}
+
+RÈGLES ABSOLUES :
+- Commence DIRECTEMENT par le contenu du document (pas d'explication préalable)
+- Document professionnel prêt à signer/envoyer
+- Ne mentionne pas SUB'ÉCO IMPACT dans le contenu
+- Utilise toutes les données disponibles pour pré-remplir`;
+
+    return withRetry(async () => {
+      if (config.provider === "openai" && config.openai) {
+        const response = await config.openai.chat.completions.create({
+          model: config.model,
+          messages: [{ role: "user", content: prompt }]
+        });
+        return response.choices[0].message.content || "";
+      } else if (config.provider === "claude" && config.claude) {
+        const response = await config.claude.messages.create({
+          model: config.model,
+          max_tokens: 4096,
+          messages: [{ role: "user", content: prompt }]
+        });
+        return response.content[0].type === "text" ? response.content[0].text : "";
+      } else if (config.provider === "gemini" && config.gemini) {
+        const response = await config.gemini.models.generateContent({
+          model: config.model,
+          contents: [{ role: 'user', parts: [{ text: prompt }] }]
+        });
+        return response.text || "";
+      }
+      return "";
+    });
   }
 };

@@ -3,8 +3,9 @@ import React, { useState, useEffect } from 'react';
 import { storage } from '../services/storage';
 import { geminiService } from '../services/ai';
 import { knowledgeService } from '../services/knowledge';
-import { Project, Client, Grant, ProjectStatus, DocumentFile, KnowledgeEntry } from '../types';
+import { Project, Client, Grant, ProjectStatus, DocumentFile, KnowledgeEntry, KnowledgeTemplate } from '../types';
 import { generateUUID } from '../utils/uuid';
+import { downloadAsDocx } from '../utils/download';
 
 const GRANTS_PER_PAGE = 5;
 
@@ -33,6 +34,8 @@ const ProjectDetail: React.FC<ProjectDetailProps> = ({ projectId, onBack }) => {
   const [kbContent, setKbContent] = useState('');
   const [kbTags, setKbTags] = useState('');
   const [showKbForm, setShowKbForm] = useState(false);
+  const [knowledgeTemplates, setKnowledgeTemplates] = useState<KnowledgeTemplate[]>([]);
+  const [generatingTemplateId, setGeneratingTemplateId] = useState<string | null>(null);
 
   useEffect(() => {
     const p = storage.getProject(projectId);
@@ -45,6 +48,7 @@ const ProjectDetail: React.FC<ProjectDetailProps> = ({ projectId, onBack }) => {
       }
     }
     setKnowledgeEntries(knowledgeService.getAll());
+    setKnowledgeTemplates(knowledgeService.getTemplates());
   }, [projectId]);
 
   const saveProjectData = () => {
@@ -250,14 +254,9 @@ const ProjectDetail: React.FC<ProjectDetailProps> = ({ projectId, onBack }) => {
     a.click();
   };
 
-  const exportDoc = (format: 'pdf' | 'docx') => {
-    if (!generatedDoc) return;
-    const blob = new Blob([generatedDoc], { type: format === 'docx' ? 'application/msword' : 'application/pdf' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `Export_${project?.title}.${format === 'docx' ? 'doc' : 'pdf'}`;
-    a.click();
+  const exportDoc = async () => {
+    if (!generatedDoc || !project) return;
+    await downloadAsDocx(generatedDoc, `Lettre_Intention_${project.title}`);
   };
 
   if (!project || !client) return <div className="p-20 text-center font-bold">Chargement...</div>;
@@ -602,7 +601,7 @@ const ProjectDetail: React.FC<ProjectDetailProps> = ({ projectId, onBack }) => {
                     <button onClick={handleValidateAndSave} className="px-6 py-4 bg-green-600 text-white rounded-2xl text-[10px] font-black uppercase hover:bg-green-700 active:scale-95 shadow-lg shadow-green-100">
                       Valider Dossier
                     </button>
-                    <button onClick={() => exportDoc('pdf')} className="px-6 py-4 bg-slate-100 rounded-2xl text-[10px] font-black uppercase hover:bg-slate-200 text-slate-700 active:scale-95">
+                    <button onClick={() => exportDoc()} className="px-6 py-4 bg-slate-100 rounded-2xl text-[10px] font-black uppercase hover:bg-slate-200 text-slate-700 active:scale-95">
                       PDF
                     </button>
                   </div>
@@ -665,12 +664,7 @@ const ProjectDetail: React.FC<ProjectDetailProps> = ({ projectId, onBack }) => {
                       try {
                         const contract = await geminiService.generateContract(client, project, currentGrant);
                         setContractDoc(contract);
-                        const blob = new Blob([contract], { type: 'text/plain' });
-                        const url = URL.createObjectURL(blob);
-                        const a = document.createElement('a');
-                        a.href = url;
-                        a.download = `Contrat_Prestation_${project.title}.txt`;
-                        a.click();
+                        await downloadAsDocx(contract, `Contrat_Prestation_${project.title}`);
                       } catch (e) {
                         handleAIError(e);
                       } finally {
@@ -797,6 +791,96 @@ const ProjectDetail: React.FC<ProjectDetailProps> = ({ projectId, onBack }) => {
                   </p>
                 </div>
               )}
+
+              {/* ── Modèles de Documents ── */}
+              <div className="pt-8 border-t border-slate-100">
+                <div className="flex items-center justify-between mb-6">
+                  <div className="text-left">
+                    <h3 className="text-xl font-black text-slate-900 tracking-tight">Modèles de Documents</h3>
+                    <p className="text-slate-500 text-xs font-bold uppercase tracking-widest mt-1">Uploadez vos modèles DOCX / XLSX / PPTX / PDF — générez des documents pré-remplis</p>
+                  </div>
+                  <label className="bg-slate-900 text-white px-8 py-4 rounded-[2rem] text-[10px] font-black uppercase tracking-widest hover:bg-emerald-600 active:scale-95 transition-all flex items-center gap-3 cursor-pointer">
+                    <i className="fas fa-upload"></i> Importer un modèle
+                    <input
+                      type="file"
+                      className="hidden"
+                      accept=".docx,.xlsx,.pptx,.pdf,.doc,.xls,.ppt"
+                      onChange={async (e) => {
+                        const file = e.target.files?.[0];
+                        if (!file) return;
+                        const reader = new FileReader();
+                        reader.onload = (ev) => {
+                          const dataUrl = ev.target?.result as string;
+                          const fileType = file.name.split('.').pop()?.toLowerCase() || 'docx';
+                          const t = knowledgeService.addTemplate(file.name, fileType, dataUrl);
+                          setKnowledgeTemplates(prev => [...prev, t]);
+                        };
+                        reader.readAsDataURL(file);
+                        e.target.value = '';
+                      }}
+                    />
+                  </label>
+                </div>
+
+                {knowledgeTemplates.length === 0 ? (
+                  <div className="bg-slate-50 rounded-[2rem] p-12 text-center border-2 border-dashed border-slate-200">
+                    <i className="fas fa-file-word text-4xl text-slate-300 mb-4 block"></i>
+                    <p className="text-slate-400 font-bold text-sm">Aucun modèle importé.</p>
+                    <p className="text-slate-300 text-xs mt-2">Importez un modèle DOCX, XLSX, PPTX ou PDF pour générer des documents pré-remplis.</p>
+                  </div>
+                ) : (
+                  <div className="grid gap-4">
+                    {knowledgeTemplates.map(tmpl => {
+                      const iconMap: Record<string, string> = { docx: 'fa-file-word', doc: 'fa-file-word', xlsx: 'fa-file-excel', xls: 'fa-file-excel', pptx: 'fa-file-powerpoint', ppt: 'fa-file-powerpoint', pdf: 'fa-file-pdf' };
+                      const colorMap: Record<string, string> = { docx: 'text-blue-600 bg-blue-50', doc: 'text-blue-600 bg-blue-50', xlsx: 'text-green-600 bg-green-50', xls: 'text-green-600 bg-green-50', pptx: 'text-orange-600 bg-orange-50', ppt: 'text-orange-600 bg-orange-50', pdf: 'text-red-600 bg-red-50' };
+                      const icon = iconMap[tmpl.fileType] || 'fa-file';
+                      const color = colorMap[tmpl.fileType] || 'text-slate-500 bg-slate-50';
+                      const isGenerating = generatingTemplateId === tmpl.id;
+                      return (
+                        <div key={tmpl.id} className="bg-white rounded-[2rem] border border-slate-200 p-6 flex items-center gap-5 group hover:shadow-lg transition-all">
+                          <div className={`w-14 h-14 rounded-2xl flex items-center justify-center flex-shrink-0 ${color}`}>
+                            <i className={`fas ${icon} text-2xl`}></i>
+                          </div>
+                          <div className="flex-1 min-w-0 text-left">
+                            <p className="font-black text-slate-900 text-sm truncate">{tmpl.name}</p>
+                            <p className="text-xs text-slate-400 uppercase font-bold">{tmpl.fileType.toUpperCase()} · {new Date(tmpl.uploadDate).toLocaleDateString('fr-FR')}</p>
+                          </div>
+                          <div className="flex items-center gap-3 flex-shrink-0">
+                            <button
+                              onClick={async () => {
+                                if (!client || !project) return;
+                                setGeneratingTemplateId(tmpl.id);
+                                try {
+                                  const content = await geminiService.generateFromTemplate(client, project, tmpl.name, tmpl.fileType, tmpl.textContent);
+                                  await downloadAsDocx(content, tmpl.name.replace(/\.[^.]+$/, '') + `_${client.name}`);
+                                } catch (e) {
+                                  handleAIError(e);
+                                } finally {
+                                  setGeneratingTemplateId(null);
+                                }
+                              }}
+                              disabled={isGenerating}
+                              className="flex items-center gap-2 px-5 py-3 bg-emerald-600 text-white rounded-2xl text-[10px] font-black uppercase hover:bg-emerald-700 active:scale-95 transition-all disabled:opacity-60"
+                            >
+                              {isGenerating ? <i className="fas fa-circle-notch fa-spin"></i> : <i className="fas fa-magic"></i>}
+                              Générer
+                            </button>
+                            <button
+                              onClick={() => {
+                                knowledgeService.deleteTemplate(tmpl.id);
+                                setKnowledgeTemplates(prev => prev.filter(t => t.id !== tmpl.id));
+                              }}
+                              className="opacity-0 group-hover:opacity-100 w-9 h-9 rounded-xl bg-red-50 text-red-400 flex items-center justify-center hover:bg-red-100 transition-all"
+                            >
+                              <i className="fas fa-times text-xs"></i>
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
             </div>
           )}
 

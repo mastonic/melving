@@ -81,6 +81,15 @@ export interface KnowledgeEntry {
   tags?: string[];
 }
 
+export interface KnowledgeTemplate {
+  id: string;
+  name: string;
+  fileType: string; // docx, xlsx, pptx, pdf
+  content: string;  // DataURL du fichier original
+  textContent?: string; // contenu texte extrait si possible
+  uploadDate: string;
+}
+
 export interface UserRole {
   isAdmin: boolean;
   name: string;
