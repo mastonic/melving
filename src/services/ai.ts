@@ -162,9 +162,20 @@ export const geminiService = {
     const config = getAIConfig();
     const prompt = `Tu es l'expert de SUB'ÉCO IMPACT. Trouve des aides réelles pour : ${client.name} (${client.region}).
     Secteur: ${client.sector}. Projet: ${project.title}.
-     Budget : ${typeof project.financingPlan === 'object' ? JSON.stringify(project.financingPlan) : project.financingPlan}.
-    
-    RETOURNE EXCLUSIVEMENT UN ARRAY JSON d'objets avec : id, title, provider, amount, description.`;
+    Budget : ${typeof project.financingPlan === 'object' ? JSON.stringify(project.financingPlan) : project.financingPlan}.
+
+    RETOURNE EXCLUSIVEMENT UN ARRAY JSON d'objets avec ces champs :
+    - id : identifiant unique
+    - title : nom de l'aide
+    - provider : organisme porteur
+    - amount : montant ou plafond estimé
+    - description : description courte de l'aide
+    - sources : références officielles ou liens (ex: décret, appel à projets)
+    - funders : liste des financeurs (ex: BPI, Région, Europe, ADEME...)
+    - fundingRate : taux de financement (ex: "50% des dépenses éligibles", "jusqu'à 80%")
+    - openingPeriod : période d'ouverture ou date limite (ex: "Ouvert toute l'année", "Clôture le 30/06/2025")
+
+    Sois précis et basé sur des dispositifs réels existants en ${client.region}.`;
 
     return withRetry(async () => {
       if (config.provider === "openai" && config.openai) {

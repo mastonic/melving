@@ -63,6 +63,10 @@ export interface Grant {
   description: string;
   deadline?: string;
   url?: string;
+  sources?: string;
+  funders?: string;
+  fundingRate?: string;
+  openingPeriod?: string;
 }
 
 export interface UserRole {

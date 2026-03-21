@@ -379,10 +379,37 @@ const ProjectDetail: React.FC<ProjectDetailProps> = ({ projectId, onBack }) => {
               </div>
               <div className="grid gap-6">
                 {grants.map((grant, idx) => (
-                  <div key={idx} className="bg-white p-10 rounded-[3rem] border border-slate-200 flex flex-col md:flex-row justify-between items-center gap-8 group text-left shadow-sm">
+                  <div key={idx} className="bg-white p-10 rounded-[3rem] border border-slate-200 flex flex-col md:flex-row justify-between items-start gap-8 group text-left shadow-sm">
                     <div className="flex-1">
                       <h4 className="font-black text-slate-900 text-xl">{grant.title}</h4>
-                      <p className="text-sm text-slate-500 mt-6 leading-relaxed line-clamp-3">{grant.description}</p>
+                      <p className="text-slate-500 text-xs font-semibold uppercase tracking-widest mt-1">{grant.provider}</p>
+                      <p className="text-sm text-slate-500 mt-4 leading-relaxed">{grant.description}</p>
+                      <div className="mt-6 grid grid-cols-2 gap-3">
+                        {grant.fundingRate && (
+                          <div className="bg-emerald-50 rounded-2xl px-4 py-3">
+                            <p className="text-[10px] font-black text-emerald-600 uppercase tracking-widest mb-1">Taux de financement</p>
+                            <p className="text-sm font-bold text-slate-800">{grant.fundingRate}</p>
+                          </div>
+                        )}
+                        {grant.openingPeriod && (
+                          <div className="bg-slate-50 rounded-2xl px-4 py-3">
+                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Période d'ouverture</p>
+                            <p className="text-sm font-bold text-slate-800">{grant.openingPeriod}</p>
+                          </div>
+                        )}
+                        {grant.funders && (
+                          <div className="bg-slate-50 rounded-2xl px-4 py-3">
+                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Financeurs</p>
+                            <p className="text-sm font-bold text-slate-800">{grant.funders}</p>
+                          </div>
+                        )}
+                        {grant.sources && (
+                          <div className="bg-slate-50 rounded-2xl px-4 py-3">
+                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Sources</p>
+                            <p className="text-sm font-bold text-slate-800">{grant.sources}</p>
+                          </div>
+                        )}
+                      </div>
                     </div>
                     <button 
                       onClick={async () => {
