@@ -192,8 +192,9 @@ export const geminiService = {
     Retourne AU MINIMUM 10 aides différentes, triées par compatibilityScore décroissant.
 
     Pour chaque aide, inclus aussi :
-    - url : lien officiel du dispositif (si connu)
-    - requiredDocuments : tableau des pièces justificatives à fournir pour cette aide (ex: ["Kbis / extrait SIRENE", "RIB bancaire", "Devis prestataire", "Plan de financement prévisionnel"])`;
+    - url : lien officiel complet du dispositif avec https:// (ex: "https://www.ademe.fr/...")
+    - requiredDocuments : tableau des pièces justificatives à fournir pour cette aide (ex: ["Kbis / extrait SIRENE", "RIB bancaire", "Devis prestataire", "Plan de financement prévisionnel"])
+    - eligibilityConditions : conditions d'éligibilité précises pour bénéficier de cette aide (ex: critères entreprise, secteur, taille, zone géographique, type de dépenses éligibles, plafonds, exclusions)`;
 
     return withRetry(async () => {
       if (config.provider === "openai" && config.openai) {

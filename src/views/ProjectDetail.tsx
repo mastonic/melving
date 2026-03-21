@@ -634,18 +634,36 @@ const ProjectDetail: React.FC<ProjectDetailProps> = ({ projectId, onBack }) => {
                     </div>
                   )}
                 </div>
-                {(project.validatedGrant || currentGrant)?.url && (
-                  <a
-                    href={(project.validatedGrant || currentGrant)?.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="mt-8 inline-flex items-center gap-2 text-emerald-400 hover:text-emerald-300 text-xs font-black uppercase tracking-widest transition-all"
-                  >
-                    <i className="fas fa-external-link-alt"></i>
-                    Voir la source officielle
-                  </a>
-                )}
+                {(() => {
+                  const rawUrl = (project.validatedGrant || currentGrant)?.url;
+                  if (!rawUrl) return null;
+                  const safeUrl = rawUrl.startsWith('http') ? rawUrl : `https://${rawUrl}`;
+                  return (
+                    <a
+                      href={safeUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="mt-8 inline-flex items-center gap-2 text-emerald-400 hover:text-emerald-300 text-xs font-black uppercase tracking-widest transition-all"
+                    >
+                      <i className="fas fa-external-link-alt"></i>
+                      Voir la source officielle
+                    </a>
+                  );
+                })()}
               </div>
+
+              {/* Conditions d'éligibilité */}
+              {(project.validatedGrant || currentGrant)?.eligibilityConditions && (
+                <div className="bg-amber-50 border border-amber-100 rounded-[2.5rem] p-10 text-left">
+                  <h3 className="font-black text-amber-900 text-sm uppercase tracking-widest flex items-center mb-6">
+                    <i className="fas fa-clipboard-check mr-3 text-amber-500"></i>
+                    Conditions pour en bénéficier
+                  </h3>
+                  <p className="text-amber-800 text-sm leading-relaxed whitespace-pre-wrap">
+                    {(project.validatedGrant || currentGrant)?.eligibilityConditions}
+                  </p>
+                </div>
+              )}
 
               {/* Actions */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

@@ -71,6 +71,7 @@ export interface Grant {
   requiredDocuments?: string[];
   compatibilityScore?: number;
   compatibilityReason?: string;
+  eligibilityConditions?: string;
 }
 
 export interface KnowledgeEntry {

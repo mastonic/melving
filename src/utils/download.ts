@@ -1,15 +1,22 @@
 
 import { Document, Paragraph, TextRun, Packer, HeadingLevel } from 'docx';
 
-const triggerDownload = (blob: Blob, filename: string) => {
-  const url = URL.createObjectURL(blob);
+// Convert Blob to data: URL to bypass Chrome's HTTP download blocking
+const blobToDataUrl = (blob: Blob): Promise<string> =>
+  new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = reject;
+    reader.readAsDataURL(blob);
+  });
+
+const triggerDownload = (dataUrl: string, filename: string) => {
   const a = document.createElement('a');
-  a.href = url;
+  a.href = dataUrl;
   a.download = filename;
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
-  URL.revokeObjectURL(url);
 };
 
 export const downloadAsDocx = async (content: string, filename: string): Promise<void> => {
@@ -41,17 +48,20 @@ export const downloadAsDocx = async (content: string, filename: string): Promise
   });
 
   const blob = await Packer.toBlob(doc);
+  const dataUrl = await blobToDataUrl(blob);
   const base = filename.replace(/\.[^.]+$/, '');
-  triggerDownload(blob, base + '.docx');
+  triggerDownload(dataUrl, base + '.docx');
 };
 
-export const downloadAsText = (content: string, filename: string) => {
+export const downloadAsText = async (content: string, filename: string): Promise<void> => {
   const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
-  triggerDownload(blob, filename);
+  const dataUrl = await blobToDataUrl(blob);
+  triggerDownload(dataUrl, filename);
 };
 
-export const downloadAsCsv = (content: string, filename: string) => {
+export const downloadAsCsv = async (content: string, filename: string): Promise<void> => {
   const blob = new Blob(['\ufeff' + content], { type: 'text/csv;charset=utf-8' });
+  const dataUrl = await blobToDataUrl(blob);
   const base = filename.replace(/\.[^.]+$/, '');
-  triggerDownload(blob, base + '.csv');
+  triggerDownload(dataUrl, base + '.csv');
 };
