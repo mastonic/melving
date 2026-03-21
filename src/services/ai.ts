@@ -194,7 +194,7 @@ export const geminiService = {
     Pour chaque aide, inclus aussi :
     - url : lien officiel complet du dispositif avec https:// (ex: "https://www.ademe.fr/...")
     - requiredDocuments : tableau des pièces justificatives à fournir pour cette aide (ex: ["Kbis / extrait SIRENE", "RIB bancaire", "Devis prestataire", "Plan de financement prévisionnel"])
-    - eligibilityConditions : conditions d'éligibilité précises pour bénéficier de cette aide (ex: critères entreprise, secteur, taille, zone géographique, type de dépenses éligibles, plafonds, exclusions)`;
+    - eligibilityConditions : conditions d'éligibilité DÉTAILLÉES et complètes (minimum 5 critères) : type de bénéficiaire éligible, secteur d'activité, taille entreprise (TPE/PME/GE), zone géographique couverte, nature des dépenses éligibles, plafonds et seuils, revenus ou chiffre d'affaires max/min, critères techniques, exclusions, délais de dépôt. Pour les aides énergie/rénovation en Martinique, consulte obligatoirement https://france-renov.gouv.fr/aides/mpr-outremer et inclus les critères exacts du dispositif.`;
 
     return withRetry(async () => {
       if (config.provider === "openai" && config.openai) {

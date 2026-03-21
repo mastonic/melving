@@ -5,7 +5,7 @@ import { geminiService } from '../services/ai';
 import { knowledgeService } from '../services/knowledge';
 import { Project, Client, Grant, ProjectStatus, DocumentFile, KnowledgeEntry, KnowledgeTemplate } from '../types';
 import { generateUUID } from '../utils/uuid';
-import { downloadAsDocx } from '../utils/download';
+import { downloadAsRtf, downloadAsCsv } from '../utils/download';
 
 const GRANTS_PER_PAGE = 5;
 
@@ -36,6 +36,9 @@ const ProjectDetail: React.FC<ProjectDetailProps> = ({ projectId, onBack }) => {
   const [showKbForm, setShowKbForm] = useState(false);
   const [knowledgeTemplates, setKnowledgeTemplates] = useState<KnowledgeTemplate[]>([]);
   const [generatingTemplateId, setGeneratingTemplateId] = useState<string | null>(null);
+  const [showPromptPanel, setShowPromptPanel] = useState(false);
+  const [promptText, setPromptText] = useState('');
+  const [showBudgetPanel, setShowBudgetPanel] = useState(false);
 
   useEffect(() => {
     const p = storage.getProject(projectId);
@@ -256,7 +259,7 @@ const ProjectDetail: React.FC<ProjectDetailProps> = ({ projectId, onBack }) => {
 
   const exportDoc = async () => {
     if (!generatedDoc || !project) return;
-    await downloadAsDocx(generatedDoc, `Lettre_Intention_${project.title}`);
+    await downloadAsRtf(generatedDoc, `Lettre_Intention_${project.title}`);
   };
 
   if (!project || !client) return <div className="p-20 text-center font-bold">Chargement...</div>;
@@ -419,16 +422,33 @@ const ProjectDetail: React.FC<ProjectDetailProps> = ({ projectId, onBack }) => {
                 <div className="lg:col-span-2">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-left">
                     {project.documents?.map(doc => (
-                      <div key={doc.id} onMouseEnter={() => setHoveredDoc(doc.id)} onMouseLeave={() => setHoveredDoc(null)} className="bg-white p-5 rounded-[2rem] border border-slate-200 flex items-center justify-between group hover:shadow-xl transition-all relative">
-                        <div className="flex items-center space-x-4 min-w-0 pr-10">
-                          <div className={`w-12 h-12 rounded-2xl flex items-center justify-center ${doc.name.includes('Note') ? 'bg-amber-50 text-amber-600' : 'bg-slate-50 text-slate-400'}`}>
+                      <div key={doc.id} className="bg-white p-5 rounded-[2rem] border border-slate-200 flex items-center justify-between group hover:shadow-xl transition-all relative">
+                        <div className="flex items-center space-x-4 min-w-0 pr-20">
+                          <div className={`w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0 ${doc.name.includes('Note') ? 'bg-amber-50 text-amber-600' : 'bg-slate-50 text-slate-400'}`}>
                             <i className="fas fa-file-alt"></i>
                           </div>
                           <div className="truncate text-xs font-black text-slate-900">{doc.name}</div>
                         </div>
-                        <button onClick={() => handleDeleteDoc(doc.id)} className="absolute right-4 opacity-0 group-hover:opacity-100 w-8 h-8 rounded-full bg-red-50 text-red-500 flex items-center justify-center">
-                          <i className="fas fa-times text-xs"></i>
-                        </button>
+                        <div className="absolute right-4 flex gap-2 opacity-0 group-hover:opacity-100">
+                          <button
+                            onClick={async () => {
+                              if (doc.content.startsWith('data:')) {
+                                const a = document.createElement('a');
+                                a.href = doc.content;
+                                a.download = doc.name;
+                                a.click();
+                              } else {
+                                await downloadAsRtf(doc.content, doc.name);
+                              }
+                            }}
+                            className="w-8 h-8 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center hover:bg-emerald-100"
+                          >
+                            <i className="fas fa-download text-xs"></i>
+                          </button>
+                          <button onClick={() => handleDeleteDoc(doc.id)} className="w-8 h-8 rounded-full bg-red-50 text-red-500 flex items-center justify-center">
+                            <i className="fas fa-times text-xs"></i>
+                          </button>
+                        </div>
                       </div>
                     ))}
                   </div>
@@ -682,7 +702,7 @@ const ProjectDetail: React.FC<ProjectDetailProps> = ({ projectId, onBack }) => {
                       try {
                         const contract = await geminiService.generateContract(client, project, currentGrant);
                         setContractDoc(contract);
-                        await downloadAsDocx(contract, `Contrat_Prestation_${project.title}`);
+                        await downloadAsRtf(contract, `Contrat_Prestation_${project.title}`);
                       } catch (e) {
                         handleAIError(e);
                       } finally {
@@ -870,7 +890,7 @@ const ProjectDetail: React.FC<ProjectDetailProps> = ({ projectId, onBack }) => {
                                 setGeneratingTemplateId(tmpl.id);
                                 try {
                                   const content = await geminiService.generateFromTemplate(client, project, tmpl.name, tmpl.fileType, tmpl.textContent);
-                                  await downloadAsDocx(content, tmpl.name.replace(/\.[^.]+$/, '') + `_${client.name}`);
+                                  await downloadAsRtf(content, tmpl.name.replace(/\.[^.]+$/, '') + `_${client.name}`);
                                 } catch (e) {
                                   handleAIError(e);
                                 } finally {
@@ -906,6 +926,7 @@ const ProjectDetail: React.FC<ProjectDetailProps> = ({ projectId, onBack }) => {
 
         {/* SIDEBAR */}
         <div className="lg:col-span-4 space-y-6">
+          {/* État du dossier */}
           <div className="bg-slate-900 rounded-[3rem] p-10 text-white border border-slate-800 text-left">
             <h3 className="text-[10px] font-black uppercase tracking-widest text-emerald-400 mb-10">État du Dossier</h3>
             <div className="space-y-8">
@@ -915,6 +936,147 @@ const ProjectDetail: React.FC<ProjectDetailProps> = ({ projectId, onBack }) => {
               <SidebarStatus label="Validé" done={!!project.validatedGrant} />
             </div>
           </div>
+
+          {/* ACCÈS OUTILS IA */}
+          <div className="bg-slate-900 rounded-[3rem] p-8 text-white border border-slate-800 text-left">
+            <h3 className="text-[10px] font-black uppercase tracking-widest text-emerald-400 mb-6 flex items-center gap-2">
+              <i className="fas fa-screwdriver-wrench text-emerald-400"></i> Accès Outils IA
+            </h3>
+            <div className="space-y-3">
+              <button
+                onClick={async () => {
+                  setActiveTab('funding');
+                  setCurrentPage(0);
+                  setLoading(true);
+                  try {
+                    const res = await geminiService.detectFunding(client, project);
+                    setGrants(res);
+                  } catch (e) { handleAIError(e); }
+                  finally { setLoading(false); }
+                }}
+                className="w-full flex items-center gap-4 p-5 rounded-2xl bg-white/5 hover:bg-emerald-600/20 border border-white/10 hover:border-emerald-500/50 transition-all group"
+              >
+                <div className="w-10 h-10 rounded-xl bg-emerald-500/20 flex items-center justify-center flex-shrink-0">
+                  <i className="fas fa-magnifying-glass-chart text-emerald-400 text-sm"></i>
+                </div>
+                <span className="text-sm font-black text-white">Veille Intelligente</span>
+                {loading && <i className="fas fa-circle-notch fa-spin text-emerald-400 ml-auto text-xs"></i>}
+              </button>
+
+              <button
+                onClick={() => setActiveTab('knowledge')}
+                className="w-full flex items-center gap-4 p-5 rounded-2xl bg-white/5 hover:bg-emerald-600/20 border border-white/10 hover:border-emerald-500/50 transition-all"
+              >
+                <div className="w-10 h-10 rounded-xl bg-emerald-500/20 flex items-center justify-center flex-shrink-0">
+                  <i className="fas fa-file-pdf text-emerald-400 text-sm"></i>
+                </div>
+                <span className="text-sm font-black text-white">Modèles PDF</span>
+              </button>
+
+              <button
+                onClick={() => setShowBudgetPanel(v => !v)}
+                className="w-full flex items-center gap-4 p-5 rounded-2xl bg-white/5 hover:bg-emerald-600/20 border border-white/10 hover:border-emerald-500/50 transition-all"
+              >
+                <div className="w-10 h-10 rounded-xl bg-emerald-500/20 flex items-center justify-center flex-shrink-0">
+                  <i className="fas fa-calculator text-emerald-400 text-sm"></i>
+                </div>
+                <span className="text-sm font-black text-white">Calcul Budget</span>
+              </button>
+
+              <button
+                onClick={() => setShowPromptPanel(v => !v)}
+                className="w-full flex items-center gap-4 p-5 rounded-2xl bg-emerald-600 hover:bg-emerald-500 border border-emerald-500 transition-all"
+              >
+                <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center flex-shrink-0">
+                  <i className="fas fa-pen text-white text-sm"></i>
+                </div>
+                <span className="text-sm font-black text-white">Dossier via Prompt</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Panel Calcul Budget */}
+          {showBudgetPanel && (project.validatedGrant || currentGrant) && (() => {
+            const grant = project.validatedGrant || currentGrant;
+            const rateStr = grant?.fundingRate || '';
+            const rateMatch = rateStr.match(/(\d+)/);
+            const rate = rateMatch ? parseInt(rateMatch[1]) : 0;
+            const budgetMatch = (project.financingPlan || '').match(/(\d[\d\s]*)/);
+            const totalBudget = budgetMatch ? parseInt(budgetMatch[1].replace(/\s/g, '')) : 0;
+            const grantAmount = Math.round(totalBudget * rate / 100);
+            const remaining = totalBudget - grantAmount;
+            return (
+              <div className="bg-white rounded-[2.5rem] border border-slate-200 p-8 space-y-5 text-left shadow-sm">
+                <h3 className="font-black text-slate-900 text-sm uppercase tracking-widest flex items-center gap-2">
+                  <i className="fas fa-calculator text-emerald-600"></i> Calcul Budget
+                </h3>
+                <div className="space-y-3">
+                  <div className="flex justify-between items-center p-4 bg-slate-50 rounded-2xl">
+                    <span className="text-xs font-bold text-slate-500 uppercase">Budget total</span>
+                    <span className="font-black text-slate-900">{totalBudget.toLocaleString('fr-FR')} €</span>
+                  </div>
+                  <div className="flex justify-between items-center p-4 bg-slate-50 rounded-2xl">
+                    <span className="text-xs font-bold text-slate-500 uppercase">Taux aide ({grant?.provider})</span>
+                    <span className="font-black text-emerald-600">{rate}%</span>
+                  </div>
+                  <div className="flex justify-between items-center p-4 bg-emerald-50 rounded-2xl border border-emerald-100">
+                    <span className="text-xs font-black text-emerald-700 uppercase">Subvention estimée</span>
+                    <span className="font-black text-emerald-700 text-lg">{grantAmount.toLocaleString('fr-FR')} €</span>
+                  </div>
+                  <div className="flex justify-between items-center p-4 bg-amber-50 rounded-2xl border border-amber-100">
+                    <span className="text-xs font-black text-amber-700 uppercase">Reste à financer</span>
+                    <span className="font-black text-amber-700 text-lg">{remaining.toLocaleString('fr-FR')} €</span>
+                  </div>
+                </div>
+                <button
+                  onClick={async () => {
+                    const csv = `Poste,Montant HT,Taux,Subvention\nInvestissement total,${totalBudget},${rate}%,${grantAmount}\nReste à financer,${remaining},,,`;
+                    await downloadAsCsv(csv, `Budget_${project.title}`);
+                  }}
+                  className="w-full py-4 bg-slate-900 text-white rounded-2xl text-[10px] font-black uppercase hover:bg-emerald-600 transition-all"
+                >
+                  <i className="fas fa-file-excel mr-2"></i> Exporter CSV
+                </button>
+              </div>
+            );
+          })()}
+
+          {/* Panel Dossier via Prompt */}
+          {showPromptPanel && (
+            <div className="bg-white rounded-[2.5rem] border border-slate-200 p-8 space-y-5 text-left shadow-sm">
+              <h3 className="font-black text-slate-900 text-sm uppercase tracking-widest flex items-center gap-2">
+                <i className="fas fa-pen text-emerald-600"></i> Dossier via Prompt
+              </h3>
+              <p className="text-xs text-slate-500">Décrivez librement le projet : l'IA remplit automatiquement le dossier.</p>
+              <textarea
+                value={promptText}
+                onChange={e => setPromptText(e.target.value)}
+                rows={5}
+                placeholder="Ex: Mon client est une PME de restauration en Martinique, il veut installer des panneaux solaires et une pompe à chaleur pour réduire sa facture énergétique. Budget estimé 120 000€, 12 employés, ouverture en 2019..."
+                className="w-full p-5 bg-slate-50 border border-slate-200 rounded-2xl text-sm outline-none focus:border-emerald-500 transition-all resize-none"
+              />
+              <button
+                onClick={async () => {
+                  if (!promptText.trim()) return;
+                  setIsAnalyzing(true);
+                  try {
+                    const extracted = await geminiService.analyzeDocument(promptText);
+                    const clean = extracted ? Object.fromEntries(Object.entries(extracted).filter(([_, v]) => v != null && v !== '')) : {};
+                    const updated = { ...project, ...clean, updatedAt: new Date().toISOString() };
+                    setProject(updated);
+                    storage.saveProject(updated);
+                    setShowPromptPanel(false);
+                    setActiveTab('synthesis');
+                  } catch (e) { handleAIError(e); }
+                  finally { setIsAnalyzing(false); }
+                }}
+                disabled={isAnalyzing || !promptText.trim()}
+                className="w-full py-4 bg-emerald-600 text-white rounded-2xl text-[10px] font-black uppercase hover:bg-emerald-700 transition-all active:scale-95 disabled:opacity-50"
+              >
+                {isAnalyzing ? <><i className="fas fa-circle-notch fa-spin mr-2"></i>Analyse en cours...</> : <><i className="fas fa-magic mr-2"></i>Remplir le dossier</>}
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </div>
