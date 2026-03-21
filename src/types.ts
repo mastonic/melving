@@ -69,6 +69,16 @@ export interface Grant {
   fundingRate?: string;
   openingPeriod?: string;
   requiredDocuments?: string[];
+  compatibilityScore?: number;
+  compatibilityReason?: string;
+}
+
+export interface KnowledgeEntry {
+  id: string;
+  title: string;
+  content: string;
+  createdAt: string;
+  tags?: string[];
 }
 
 export interface UserRole {

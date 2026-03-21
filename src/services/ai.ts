@@ -3,6 +3,7 @@ import { GoogleGenAI } from "@google/genai";
 import OpenAI from "openai";
 import Anthropic from "@anthropic-ai/sdk";
 import { Client, Grant, Project, DocumentFile } from "../types";
+import { knowledgeService } from "./knowledge";
 
 const getAIConfig = () => {
     // 1. Get current preference if set
@@ -160,9 +161,16 @@ export const geminiService = {
 
   async detectFunding(client: Client, project: Project): Promise<Grant[]> {
     const config = getAIConfig();
+    const kbContext = knowledgeService.getContext(6000);
     const prompt = `Tu es l'expert de SUB'ÉCO IMPACT. Trouve des aides réelles pour : ${client.name} (${client.region}).
     Secteur: ${client.sector}. Projet: ${project.title}.
     Budget : ${typeof project.financingPlan === 'object' ? JSON.stringify(project.financingPlan) : project.financingPlan}.
+    Contexte projet : ${project.context || ''}.
+    Objectifs : ${project.objectives || ''}.
+    Taille entreprise : ${client.size}.${kbContext ? `
+
+    BASE DE CONNAISSANCES PARTAGÉE (utilise ces informations pour enrichir et affiner ta réponse) :
+    ${kbContext}` : ''}
 
     RETOURNE EXCLUSIVEMENT UN ARRAY JSON d'objets avec ces champs :
     - id : identifiant unique
@@ -174,11 +182,14 @@ export const geminiService = {
     - funders : liste des financeurs (ex: BPI, Région, Europe, ADEME...)
     - fundingRate : taux de financement (ex: "50% des dépenses éligibles", "jusqu'à 80%")
     - openingPeriod : période d'ouverture ou date limite (ex: "Ouvert toute l'année", "Clôture le 30/06/2025")
+    - compatibilityScore : nombre entier de 0 à 100 indiquant la compatibilité avec ce dossier précis (100 = parfait match secteur/région/budget/objectifs)
+    - compatibilityReason : explication courte du score en 1 phrase (ex: "Secteur éligible, région couverte, budget dans les plafonds")
 
     Consulte OBLIGATOIREMENT ces sources spécifiques aux DOM (Martinique/Guadeloupe) :
     AVERE, EDF, DEAL (Direction de l'Environnement de l'Aménagement et du Logement), AFD (Agence Française de Développement), ADEME, CTM (Collectivité Territoriale de Martinique), EPCI, CCI (Chambre de Commerce et d'Industrie), BPI France, Région, FEADER, FEDER, FSE, État.
     Consulte aussi : https://martinique-renov.ecologie.gouv.fr/dispositifs-2-4
     Sois précis et basé sur des dispositifs réels existants en ${client.region}.
+    Retourne AU MINIMUM 10 aides différentes, triées par compatibilityScore décroissant.
 
     Pour chaque aide, inclus aussi :
     - url : lien officiel du dispositif (si connu)
@@ -197,7 +208,7 @@ export const geminiService = {
       } else if (config.provider === "claude" && config.claude) {
         const response = await config.claude.messages.create({
           model: config.model,
-          max_tokens: 2048,
+          max_tokens: 4096,
           messages: [{ role: "user", content: prompt }]
         });
         const text = response.content[0].type === "text" ? response.content[0].text : "[]";

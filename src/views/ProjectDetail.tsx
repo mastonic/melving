@@ -2,8 +2,11 @@
 import React, { useState, useEffect } from 'react';
 import { storage } from '../services/storage';
 import { geminiService } from '../services/ai';
-import { Project, Client, Grant, ProjectStatus, DocumentFile } from '../types';
+import { knowledgeService } from '../services/knowledge';
+import { Project, Client, Grant, ProjectStatus, DocumentFile, KnowledgeEntry } from '../types';
 import { generateUUID } from '../utils/uuid';
+
+const GRANTS_PER_PAGE = 5;
 
 interface ProjectDetailProps {
   projectId: string;
@@ -16,7 +19,7 @@ const ProjectDetail: React.FC<ProjectDetailProps> = ({ projectId, onBack }) => {
   const [grants, setGrants] = useState<Grant[]>([]);
   const [loading, setLoading] = useState(false);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
-  const [activeTab, setActiveTab] = useState<'synthesis' | 'docs' | 'funding' | 'editor' | 'aid'>('synthesis');
+  const [activeTab, setActiveTab] = useState<'synthesis' | 'docs' | 'funding' | 'editor' | 'aid' | 'knowledge'>('synthesis');
   const [generatedDoc, setGeneratedDoc] = useState<string | null>(null);
   const [currentGrant, setCurrentGrant] = useState<Grant | null>(null);
   const [isEditing, setIsEditing] = useState(false);
@@ -24,6 +27,12 @@ const ProjectDetail: React.FC<ProjectDetailProps> = ({ projectId, onBack }) => {
   const [noteContent, setNoteContent] = useState('');
   const [showNoteInput, setShowNoteInput] = useState(false);
   const [contractDoc, setContractDoc] = useState<string | null>(null);
+  const [currentPage, setCurrentPage] = useState(0);
+  const [knowledgeEntries, setKnowledgeEntries] = useState<KnowledgeEntry[]>([]);
+  const [kbTitle, setKbTitle] = useState('');
+  const [kbContent, setKbContent] = useState('');
+  const [kbTags, setKbTags] = useState('');
+  const [showKbForm, setShowKbForm] = useState(false);
 
   useEffect(() => {
     const p = storage.getProject(projectId);
@@ -35,6 +44,7 @@ const ProjectDetail: React.FC<ProjectDetailProps> = ({ projectId, onBack }) => {
         setCurrentGrant(p.validatedGrant);
       }
     }
+    setKnowledgeEntries(knowledgeService.getAll());
   }, [projectId]);
 
   const saveProjectData = () => {
@@ -299,6 +309,7 @@ const ProjectDetail: React.FC<ProjectDetailProps> = ({ projectId, onBack }) => {
         <TabBtn active={activeTab === 'funding'} onClick={() => setActiveTab('funding')} label="Détection" icon="fa-search-dollar" />
         {generatedDoc && <TabBtn active={activeTab === 'editor'} onClick={() => setActiveTab('editor')} label="Éditeur" icon="fa-pen-nib" />}
         {(project.validatedGrant || currentGrant) && <TabBtn active={activeTab === 'aid'} onClick={() => setActiveTab('aid')} label="Aide Validée" icon="fa-hand-holding-dollar" />}
+        <TabBtn active={activeTab === 'knowledge'} onClick={() => setActiveTab('knowledge')} label={`Base de Connaissance${knowledgeEntries.length > 0 ? ` (${knowledgeEntries.length})` : ''}`} icon="fa-database" />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
@@ -427,16 +438,22 @@ const ProjectDetail: React.FC<ProjectDetailProps> = ({ projectId, onBack }) => {
             </div>
           )}
 
-          {activeTab === 'funding' && (
+          {activeTab === 'funding' && (() => {
+            const totalPages = Math.ceil(grants.length / GRANTS_PER_PAGE);
+            const visibleGrants = grants.slice(currentPage * GRANTS_PER_PAGE, (currentPage + 1) * GRANTS_PER_PAGE);
+            return (
             <div className="space-y-8 animate-in slide-in-from-bottom-2 duration-500">
               <div className="bg-emerald-600 p-12 rounded-[3rem] text-white flex flex-col md:flex-row justify-between items-center gap-8 border border-emerald-500">
                 <div className="text-left">
                   <h3 className="text-3xl font-black tracking-tight"><i className="fas fa-robot mr-4"></i> Veille IA</h3>
-                  <p className="text-emerald-100 text-xs font-bold uppercase mt-2">Financements territoriaux identifiés</p>
+                  <p className="text-emerald-100 text-xs font-bold uppercase mt-2">
+                    {grants.length > 0 ? `${grants.length} aides identifiées` : 'Financements territoriaux identifiés'}
+                  </p>
                 </div>
-                <button 
+                <button
                   onClick={async () => {
                     setLoading(true);
+                    setCurrentPage(0);
                     try {
                       const res = await geminiService.detectFunding(client, project);
                       setGrants(res);
@@ -453,11 +470,25 @@ const ProjectDetail: React.FC<ProjectDetailProps> = ({ projectId, onBack }) => {
                 </button>
               </div>
               <div className="grid gap-6">
-                {grants.map((grant, idx) => (
+                {visibleGrants.map((grant, idx) => {
+                  const score = grant.compatibilityScore ?? null;
+                  const scoreColor = score === null ? 'bg-slate-100 text-slate-500' : score >= 70 ? 'bg-emerald-500 text-white' : score >= 40 ? 'bg-amber-400 text-white' : 'bg-red-400 text-white';
+                  return (
                   <div key={idx} className="bg-white p-10 rounded-[3rem] border border-slate-200 flex flex-col md:flex-row justify-between items-start gap-8 group text-left shadow-sm">
                     <div className="flex-1">
-                      <h4 className="font-black text-slate-900 text-xl">{grant.title}</h4>
-                      <p className="text-slate-500 text-xs font-semibold uppercase tracking-widest mt-1">{grant.provider}</p>
+                      <div className="flex items-start justify-between gap-4 mb-1">
+                        <h4 className="font-black text-slate-900 text-xl">{grant.title}</h4>
+                        {score !== null && (
+                          <div className={`flex-shrink-0 flex flex-col items-center justify-center w-16 h-16 rounded-2xl ${scoreColor} shadow-lg`}>
+                            <span className="text-xl font-black leading-none">{score}</span>
+                            <span className="text-[8px] font-black uppercase tracking-widest opacity-80">Score</span>
+                          </div>
+                        )}
+                      </div>
+                      <p className="text-slate-500 text-xs font-semibold uppercase tracking-widest">{grant.provider}</p>
+                      {grant.compatibilityReason && (
+                        <p className="text-xs text-slate-400 italic mt-1">{grant.compatibilityReason}</p>
+                      )}
                       <p className="text-sm text-slate-500 mt-4 leading-relaxed">{grant.description}</p>
                       <div className="mt-6 grid grid-cols-2 gap-3">
                         {grant.fundingRate && (
@@ -486,7 +517,7 @@ const ProjectDetail: React.FC<ProjectDetailProps> = ({ projectId, onBack }) => {
                         )}
                       </div>
                     </div>
-                    <button 
+                    <button
                       onClick={async () => {
                         setLoading(true);
                         try {
@@ -500,15 +531,44 @@ const ProjectDetail: React.FC<ProjectDetailProps> = ({ projectId, onBack }) => {
                           setLoading(false);
                         }
                       }}
-                      className="bg-slate-900 text-white px-10 py-5 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-emerald-600 active:scale-95 transition-all"
+                      className="bg-slate-900 text-white px-10 py-5 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-emerald-600 active:scale-95 transition-all flex-shrink-0"
                     >
                       Sélectionner
                     </button>
                   </div>
-                ))}
+                  );
+                })}
               </div>
+              {totalPages > 1 && (
+                <div className="flex items-center justify-center gap-4 pt-4">
+                  <button
+                    onClick={() => setCurrentPage(p => Math.max(0, p - 1))}
+                    disabled={currentPage === 0}
+                    className="w-12 h-12 rounded-2xl bg-white border border-slate-200 flex items-center justify-center hover:bg-slate-50 disabled:opacity-30 transition-all active:scale-90"
+                  >
+                    <i className="fas fa-chevron-left text-slate-700 text-xs"></i>
+                  </button>
+                  {Array.from({ length: totalPages }).map((_, i) => (
+                    <button
+                      key={i}
+                      onClick={() => setCurrentPage(i)}
+                      className={`w-10 h-10 rounded-xl text-xs font-black transition-all ${currentPage === i ? 'bg-emerald-600 text-white shadow-lg' : 'bg-white border border-slate-200 text-slate-500 hover:bg-slate-50'}`}
+                    >
+                      {i + 1}
+                    </button>
+                  ))}
+                  <button
+                    onClick={() => setCurrentPage(p => Math.min(totalPages - 1, p + 1))}
+                    disabled={currentPage === totalPages - 1}
+                    className="w-12 h-12 rounded-2xl bg-white border border-slate-200 flex items-center justify-center hover:bg-slate-50 disabled:opacity-30 transition-all active:scale-90"
+                  >
+                    <i className="fas fa-chevron-right text-slate-700 text-xs"></i>
+                  </button>
+                </div>
+              )}
             </div>
-          )}
+            );
+          })()}
 
           {activeTab === 'editor' && generatedDoc && (
             <div className="bg-white rounded-[3rem] border border-slate-200 overflow-hidden shadow-2xl animate-in zoom-in-95 duration-500">
@@ -625,6 +685,118 @@ const ProjectDetail: React.FC<ProjectDetailProps> = ({ projectId, onBack }) => {
                   </button>
                 </div>
               </div>
+            </div>
+          )}
+
+          {activeTab === 'knowledge' && (
+            <div className="space-y-8 animate-in slide-in-from-bottom-2 duration-500">
+              <div className="flex items-center justify-between">
+                <div className="text-left">
+                  <h3 className="text-2xl font-black text-slate-900 tracking-tight">Base de Connaissance</h3>
+                  <p className="text-slate-500 text-xs font-bold uppercase tracking-widest mt-1">Contexte partagé entre tous les dossiers — alimenté par le client</p>
+                </div>
+                <button
+                  onClick={() => setShowKbForm(v => !v)}
+                  className="bg-emerald-600 text-white px-8 py-4 rounded-[2rem] text-[10px] font-black uppercase tracking-widest hover:bg-emerald-700 active:scale-95 transition-all flex items-center gap-3"
+                >
+                  <i className="fas fa-plus"></i> Ajouter une entrée
+                </button>
+              </div>
+
+              {showKbForm && (
+                <div className="bg-white rounded-[2.5rem] border border-slate-200 p-8 space-y-5 shadow-sm">
+                  <h4 className="font-black text-slate-900 text-sm uppercase tracking-widest">Nouvelle entrée</h4>
+                  <input
+                    type="text"
+                    placeholder="Titre (ex: Règles ADEME Martinique, Retour d'expérience client X...)"
+                    value={kbTitle}
+                    onChange={e => setKbTitle(e.target.value)}
+                    className="w-full px-6 py-4 bg-slate-50 border border-slate-200 rounded-2xl text-sm font-bold outline-none focus:border-emerald-500 transition-all"
+                  />
+                  <input
+                    type="text"
+                    placeholder="Tags séparés par virgule (ex: ademe, énergie, martinique)"
+                    value={kbTags}
+                    onChange={e => setKbTags(e.target.value)}
+                    className="w-full px-6 py-4 bg-slate-50 border border-slate-200 rounded-2xl text-sm outline-none focus:border-emerald-500 transition-all"
+                  />
+                  <textarea
+                    placeholder="Contenu : informations, règles, retours d'expérience, dispositifs locaux, critères d'éligibilité..."
+                    value={kbContent}
+                    onChange={e => setKbContent(e.target.value)}
+                    rows={6}
+                    className="w-full px-6 py-4 bg-slate-50 border border-slate-200 rounded-2xl text-sm outline-none focus:border-emerald-500 transition-all resize-none"
+                  />
+                  <div className="flex gap-3">
+                    <button
+                      onClick={() => {
+                        if (!kbTitle.trim() || !kbContent.trim()) return;
+                        const tags = kbTags.split(',').map(t => t.trim()).filter(Boolean);
+                        const entry = knowledgeService.add(kbTitle.trim(), kbContent.trim(), tags.length ? tags : undefined);
+                        setKnowledgeEntries(prev => [...prev, entry]);
+                        setKbTitle('');
+                        setKbContent('');
+                        setKbTags('');
+                        setShowKbForm(false);
+                      }}
+                      className="flex-1 py-4 bg-slate-900 text-white rounded-2xl text-[10px] font-black uppercase hover:bg-emerald-600 transition-all active:scale-95"
+                    >
+                      <i className="fas fa-save mr-2"></i> Enregistrer
+                    </button>
+                    <button
+                      onClick={() => setShowKbForm(false)}
+                      className="px-8 py-4 bg-slate-100 text-slate-600 rounded-2xl text-[10px] font-black uppercase hover:bg-slate-200 transition-all"
+                    >
+                      Annuler
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {knowledgeEntries.length === 0 ? (
+                <div className="bg-slate-50 rounded-[2.5rem] p-16 text-center border-2 border-dashed border-slate-200">
+                  <i className="fas fa-database text-4xl text-slate-300 mb-4 block"></i>
+                  <p className="text-slate-400 font-bold text-sm">Aucune entrée dans la base.</p>
+                  <p className="text-slate-300 text-xs mt-2">Ajoutez des connaissances métier, règles locales, retours d'expérience...</p>
+                </div>
+              ) : (
+                <div className="grid gap-4">
+                  {knowledgeEntries.map(entry => (
+                    <div key={entry.id} className="bg-white rounded-[2rem] border border-slate-200 p-7 text-left group hover:shadow-lg transition-all">
+                      <div className="flex items-start justify-between gap-4">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-3 flex-wrap mb-2">
+                            <h5 className="font-black text-slate-900 text-base">{entry.title}</h5>
+                            {entry.tags?.map(tag => (
+                              <span key={tag} className="text-[9px] font-black uppercase tracking-widest bg-emerald-50 text-emerald-700 px-3 py-1 rounded-full">{tag}</span>
+                            ))}
+                          </div>
+                          <p className="text-xs text-slate-400 mb-3">{new Date(entry.createdAt).toLocaleDateString('fr-FR')}</p>
+                          <p className="text-sm text-slate-600 leading-relaxed line-clamp-3 whitespace-pre-wrap">{entry.content}</p>
+                        </div>
+                        <button
+                          onClick={() => {
+                            knowledgeService.delete(entry.id);
+                            setKnowledgeEntries(prev => prev.filter(e => e.id !== entry.id));
+                          }}
+                          className="opacity-0 group-hover:opacity-100 w-9 h-9 rounded-xl bg-red-50 text-red-400 flex items-center justify-center hover:bg-red-100 transition-all flex-shrink-0"
+                        >
+                          <i className="fas fa-times text-xs"></i>
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {knowledgeEntries.length > 0 && (
+                <div className="bg-emerald-50 border border-emerald-100 rounded-[2rem] p-6 flex items-center gap-4">
+                  <i className="fas fa-circle-info text-emerald-600 text-xl flex-shrink-0"></i>
+                  <p className="text-emerald-800 text-xs font-bold">
+                    Ces <strong>{knowledgeEntries.length} entrée{knowledgeEntries.length > 1 ? 's' : ''}</strong> sont automatiquement injectées dans chaque détection d'aides pour enrichir les résultats.
+                  </p>
+                </div>
+              )}
             </div>
           )}
 
