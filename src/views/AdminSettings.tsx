@@ -2,21 +2,25 @@
 import React, { useState, useEffect } from 'react';
 
 const AdminSettings: React.FC = () => {
-  const [provider, setProvider] = useState<'gemini' | 'openai'>(
+  const [provider, setProvider] = useState<'gemini' | 'openai' | 'claude'>(
     (localStorage.getItem('AI_PROVIDER') as any) || 'gemini'
   );
   const [geminiKey, setGeminiKey] = useState(localStorage.getItem('GEMINI_API_KEY') || '');
   const [openaiKey, setOpenaiKey] = useState(localStorage.getItem('OPENAI_API_KEY') || '');
+  const [claudeKey, setClaudeKey] = useState(localStorage.getItem('CLAUDE_API_KEY') || '');
   const [status, setStatus] = useState<'idle' | 'saved'>('idle');
 
   const handleSave = () => {
     localStorage.setItem('AI_PROVIDER', provider);
     localStorage.setItem('GEMINI_API_KEY', geminiKey);
     localStorage.setItem('OPENAI_API_KEY', openaiKey);
-    
+    localStorage.setItem('CLAUDE_API_KEY', claudeKey);
+
     // Also update the active key based on provider for backward compatibility
     if (provider === 'openai') {
         localStorage.setItem('ACTIVE_API_KEY', openaiKey);
+    } else if (provider === 'claude') {
+        localStorage.setItem('ACTIVE_API_KEY', claudeKey);
     } else {
         localStorage.setItem('ACTIVE_API_KEY', geminiKey);
     }
@@ -48,8 +52,8 @@ const AdminSettings: React.FC = () => {
             <div className="bg-slate-900 p-8 rounded-[2rem] text-white">
                 <h3 className="text-emerald-400 font-black text-[10px] uppercase tracking-widest mb-4">Statut Système</h3>
                 <div className="flex items-center space-x-3">
-                    <div className={`w-3 h-3 rounded-full ${provider === 'openai' && openaiKey ? 'bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.5)]' : provider === 'gemini' && geminiKey ? 'bg-emerald-500' : 'bg-slate-600'}`}></div>
-                    <span className="text-xs font-bold uppercase tracking-tight">Connecté à {provider === 'openai' ? 'OpenAI' : 'Gemini'}</span>
+                    <div className={`w-3 h-3 rounded-full ${(provider === 'openai' && openaiKey) || (provider === 'gemini' && geminiKey) || (provider === 'claude' && claudeKey) ? 'bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.5)]' : 'bg-slate-600'}`}></div>
+                    <span className="text-xs font-bold uppercase tracking-tight">Connecté à {provider === 'openai' ? 'OpenAI' : provider === 'claude' ? 'Claude' : 'Gemini'}</span>
                 </div>
             </div>
         </div>
@@ -65,20 +69,27 @@ const AdminSettings: React.FC = () => {
               {/* Provider Selection */}
               <div className="space-y-4">
                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Choisir le moteur par défaut</label>
-                <div className="grid grid-cols-2 gap-4">
-                  <button 
+                <div className="grid grid-cols-3 gap-4">
+                  <button
                     onClick={() => setProvider('gemini')}
                     className={`p-6 rounded-3xl border-2 transition-all flex flex-col items-center text-center ${provider === 'gemini' ? 'border-emerald-600 bg-emerald-50 text-emerald-900 shadow-lg' : 'border-slate-100 bg-slate-50 text-slate-400 hover:border-slate-200'}`}
                   >
                     <i className={`fab fa-google text-2xl mb-3 ${provider === 'gemini' ? 'text-emerald-600' : 'text-slate-300'}`}></i>
                     <span className="font-black uppercase text-xs tracking-widest">Google Gemini</span>
                   </button>
-                  <button 
-                     onClick={() => setProvider('openai')}
-                     className={`p-6 rounded-3xl border-2 transition-all flex flex-col items-center text-center ${provider === 'openai' ? 'border-emerald-600 bg-emerald-50 text-emerald-900 shadow-lg' : 'border-slate-100 bg-slate-50 text-slate-400 hover:border-slate-200'}`}
+                  <button
+                    onClick={() => setProvider('openai')}
+                    className={`p-6 rounded-3xl border-2 transition-all flex flex-col items-center text-center ${provider === 'openai' ? 'border-emerald-600 bg-emerald-50 text-emerald-900 shadow-lg' : 'border-slate-100 bg-slate-50 text-slate-400 hover:border-slate-200'}`}
                   >
                     <i className={`fas fa-bolt text-2xl mb-3 ${provider === 'openai' ? 'text-emerald-600' : 'text-slate-300'}`}></i>
                     <span className="font-black uppercase text-xs tracking-widest">OpenAI ChatGPT</span>
+                  </button>
+                  <button
+                    onClick={() => setProvider('claude')}
+                    className={`p-6 rounded-3xl border-2 transition-all flex flex-col items-center text-center ${provider === 'claude' ? 'border-emerald-600 bg-emerald-50 text-emerald-900 shadow-lg' : 'border-slate-100 bg-slate-50 text-slate-400 hover:border-slate-200'}`}
+                  >
+                    <i className={`fas fa-robot text-2xl mb-3 ${provider === 'claude' ? 'text-emerald-600' : 'text-slate-300'}`}></i>
+                    <span className="font-black uppercase text-xs tracking-widest">Claude</span>
                   </button>
                 </div>
               </div>
@@ -104,11 +115,25 @@ const AdminSettings: React.FC = () => {
                     <span>Clé API OpenAI</span>
                     <a href="https://platform.openai.com/api-keys" target="_blank" className="text-emerald-600 hover:underline">Obtenir →</a>
                   </label>
-                  <input 
-                    type="password" 
+                  <input
+                    type="password"
                     value={openaiKey}
                     onChange={(e) => setOpenaiKey(e.target.value)}
                     placeholder="sk-proj-..."
+                    className="w-full px-8 py-5 bg-slate-50 border border-slate-200 rounded-3xl font-mono text-sm focus:bg-white focus:border-emerald-600 outline-none transition-all shadow-inner"
+                  />
+                </div>
+
+                <div className="space-y-3">
+                  <label className="text-[10px] font-black text-slate-900 uppercase tracking-widest flex justify-between items-center">
+                    <span>Clé API Claude (Anthropic)</span>
+                    <a href="https://console.anthropic.com/settings/keys" target="_blank" className="text-emerald-600 hover:underline">Obtenir →</a>
+                  </label>
+                  <input
+                    type="password"
+                    value={claudeKey}
+                    onChange={(e) => setClaudeKey(e.target.value)}
+                    placeholder="sk-ant-..."
                     className="w-full px-8 py-5 bg-slate-50 border border-slate-200 rounded-3xl font-mono text-sm focus:bg-white focus:border-emerald-600 outline-none transition-all shadow-inner"
                   />
                 </div>

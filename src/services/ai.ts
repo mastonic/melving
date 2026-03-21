@@ -1,6 +1,7 @@
 
 import { GoogleGenAI } from "@google/genai";
 import OpenAI from "openai";
+import Anthropic from "@anthropic-ai/sdk";
 import { Client, Grant, Project, DocumentFile } from "../types";
 
 const getAIConfig = () => {
@@ -15,18 +16,27 @@ const getAIConfig = () => {
     ).trim();
 
     const openaiKey = (
-        localStorage.getItem('OPENAI_API_KEY') || 
+        localStorage.getItem('OPENAI_API_KEY') ||
         (import.meta as any).env?.VITE_OPENAI_API_KEY ||
         ""
     ).trim();
-  
+
+    const claudeKey = (
+        localStorage.getItem('CLAUDE_API_KEY') ||
+        (import.meta as any).env?.VITE_CLAUDE_API_KEY ||
+        ""
+    ).trim();
+
     // 3. Select final key and provider
     let selectedProvider = preferredProvider || (openaiKey.startsWith("sk-") ? "openai" : "gemini");
-    let activeKey = selectedProvider === "openai" ? openaiKey : geminiKey;
+    let activeKey = selectedProvider === "openai" ? openaiKey : selectedProvider === "claude" ? claudeKey : geminiKey;
 
     // Fallback if the preferred one has no key
     if (!activeKey) {
-        if (openaiKey) {
+        if (claudeKey) {
+            selectedProvider = "claude";
+            activeKey = claudeKey;
+        } else if (openaiKey) {
             selectedProvider = "openai";
             activeKey = openaiKey;
         } else if (geminiKey) {
@@ -39,7 +49,6 @@ const getAIConfig = () => {
       throw new Error("apikey_missing");
     }
 
-    // Detect provider
     if (selectedProvider === "openai") {
         return {
             provider: "openai" as const,
@@ -47,7 +56,15 @@ const getAIConfig = () => {
             model: "gpt-4o-mini"
         };
     }
-    
+
+    if (selectedProvider === "claude") {
+        return {
+            provider: "claude" as const,
+            claude: new Anthropic({ apiKey: activeKey, dangerouslyAllowBrowser: true }),
+            model: "claude-sonnet-4-6"
+        };
+    }
+
     return {
         provider: "gemini" as const,
         gemini: new GoogleGenAI({ apiKey: activeKey, apiVersion: 'v1beta' }),
@@ -122,6 +139,14 @@ export const geminiService = {
           response_format: { type: "json_object" }
         });
         return extractJSON(response.choices[0].message.content || "{}") || {};
+      } else if (config.provider === "claude" && config.claude) {
+        const response = await config.claude.messages.create({
+          model: config.model,
+          max_tokens: 2048,
+          messages: [{ role: "user", content: prompt }]
+        });
+        const text = response.content[0].type === "text" ? response.content[0].text : "{}";
+        return extractJSON(text) || {};
       } else if (config.provider === "gemini" && config.gemini) {
         const response = await config.gemini.models.generateContent({
             model: config.model,
@@ -150,6 +175,16 @@ export const geminiService = {
         });
         const result = extractJSON(response.choices[0].message.content || "[]");
         const grants = Array.isArray(result) ? result : (result.grants || result.aides || Object.values(result)[0]);
+        return Array.isArray(grants) ? grants : [];
+      } else if (config.provider === "claude" && config.claude) {
+        const response = await config.claude.messages.create({
+          model: config.model,
+          max_tokens: 2048,
+          messages: [{ role: "user", content: prompt }]
+        });
+        const text = response.content[0].type === "text" ? response.content[0].text : "[]";
+        const result = extractJSON(text);
+        const grants = Array.isArray(result) ? result : (result?.grants || result?.aides || Object.values(result ?? {})[0]);
         return Array.isArray(grants) ? grants : [];
       } else if (config.provider === "gemini" && config.gemini) {
         const response = await config.gemini.models.generateContent({
@@ -180,6 +215,13 @@ export const geminiService = {
           messages: [{ role: "user", content: prompt }]
         });
         return response.choices[0].message.content || "";
+      } else if (config.provider === "claude" && config.claude) {
+        const response = await config.claude.messages.create({
+          model: config.model,
+          max_tokens: 2048,
+          messages: [{ role: "user", content: prompt }]
+        });
+        return response.content[0].type === "text" ? response.content[0].text : "";
       } else if (config.provider === "gemini" && config.gemini) {
         const response = await config.gemini.models.generateContent({
             model: config.model,
