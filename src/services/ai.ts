@@ -175,6 +175,8 @@ export const geminiService = {
     - fundingRate : taux de financement (ex: "50% des dépenses éligibles", "jusqu'à 80%")
     - openingPeriod : période d'ouverture ou date limite (ex: "Ouvert toute l'année", "Clôture le 30/06/2025")
 
+    Consulte OBLIGATOIREMENT ces sources spécifiques aux DOM (Martinique/Guadeloupe) :
+    AVERE, EDF, DEAL (Direction de l'Environnement de l'Aménagement et du Logement), AFD (Agence Française de Développement), ADEME, CTM (Collectivité Territoriale de Martinique), EPCI, CCI (Chambre de Commerce et d'Industrie), BPI France, Région, FEADER, FEDER, FSE, État.
     Sois précis et basé sur des dispositifs réels existants en ${client.region}.`;
 
     return withRetry(async () => {
@@ -211,13 +213,25 @@ export const geminiService = {
 
   async generateDocument(client: Client, project: Project, grant: Grant, docType: string): Promise<string> {
     const config = getAIConfig();
-    const prompt = `Rédige une ${docType} officielle pour SUB'ÉCO IMPACT, prête à l'emploi.
-    STRICT : Ne commence JAMAIS par "Voici...". Commence DIRECTEMENT par le contenu (Objet: ...).
-    
+    const prompt = `Rédige une ${docType} professionnelle, prête à l'emploi, rédigée AU NOM DU CLIENT et ADRESSÉE AU FINANCEUR.
+
+    RÈGLES ABSOLUES :
+    - Ne mentionne JAMAIS "SUB'ÉCO IMPACT" dans le document
+    - Le document est écrit à la première personne par le client (ou son représentant légal)
+    - Il est adressé directement au financeur (${grant.provider})
+    - Commence DIRECTEMENT par le contenu (Objet: ...), jamais par "Voici..."
+    - Termine par une demande explicite de prise de contact ou de rendez-vous
+    - Utilise un ton formel et professionnel
+
     DONNÉES :
-    - Client : ${client.name}
+    - Expéditeur (client) : ${client.name}
     - Projet : ${project.title}
-    - Aide : ${grant.title} de ${grant.provider}`;
+    - Contexte projet : ${project.context || ''}
+    - Destinataire (financeur) : ${grant.provider}
+    - Aide sollicitée : ${grant.title}
+    - Montant : ${grant.amount}
+    - Taux : ${grant.fundingRate || ''}
+    - Région : ${client.region || ''}`;
 
     return withRetry(async () => {
       if (config.provider === "openai" && config.openai) {
